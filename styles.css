@@ -1,5 +1,6 @@
 body{margin:0;overflow:hidden;background:#000;font-family:'Courier New',Courier,monospace;user-select:none;color:#fff}
-
+    
+/* Programmer Art CSS Toggle */
 body.prog-art .btn { background: #808080; border: 2px solid #000; border-top-color:#fff; border-left-color:#fff; border-bottom-color:#555; border-right-color:#555; font-family: monospace; text-shadow: 2px 2px #000; color:#fff; }
 body.prog-art .btn:hover { background: #999; border-color:#fff; }
 body.prog-art .btn-active { background: #555; color: #aaffaa; }
