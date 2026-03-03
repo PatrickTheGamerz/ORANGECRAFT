@@ -1,1 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ORANGECRAFT - 1.01.8</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body oncontextmenu="return false;">
 
+  <div id="tooltip">Item Name</div>
+  <div id="vhs-master"><div id="vhs-scanlines"></div><div id="vhs-noise"></div></div>
+  <div id="crosshair"></div>
+  <div id="drag-icon"></div>
+  
+  <div id="hud">
+      <div id="chat-container">
+          <div id="chat-log"></div>
+          <div id="chat-input-wrapper">
+              <div id="chat-suggestions"></div>
+              <input type="text" id="chat-input" placeholder="> Type a message or command...">
+          </div>
+      </div>
+      <canvas id="hud-canvas" width="360" height="40"></canvas>
+      <div id="hotbar-display"></div>
+  </div>
+
+  <div id="main-menu" class="menu-overlay" style="display:flex; background: rgba(0,0,0,0.2);">
+    <div class="title-container">
+        <div class="title">ORANGECRAFT</div>
+        <div class="splash" id="splash-text"></div>
+    </div>
+    <div class="btn" onclick="playSound('click'); loadWorldList(); setMenu('SINGLEPLAYER')">Singleplayer</div>
+    <div class="btn" onclick="playSound('click'); setMenu('MULTIPLAYER')">Multiplayer</div>
+    <div style="display:flex; justify-content:center;">
+        <div class="btn btn-half" onclick="playSound('click'); setMenu('OPTIONS')">Options...</div>
+        <div class="btn btn-half" onclick="playSound('click'); window.location.href='about:blank'; window.close();">Quit Game</div>
+    </div>
+  </div>
+
+  <div id="singleplayer-menu" class="menu-overlay dirt-bg" style="z-index: 9000;">
+    <div class="title" style="font-size: 2rem; margin-bottom: 10px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Select World</div>
+    <div class="menu-panel" id="world-list-container" style="width: 500px; height: 300px; padding:10px;"></div>
+    <div style="display:flex; justify-content:center; flex-wrap:wrap; width: 600px;">
+        <div class="btn btn-half" onclick="playSound('click'); playSelectedWorld()">Play Selected World</div>
+        <div class="btn btn-half" onclick="playSound('click'); setMenu('CREATE_WORLD')">Create New World</div>
+        <div class="btn btn-half" onclick="playSound('click'); deleteSelectedWorld()">Delete</div>
+        <div class="btn btn-half" onclick="playSound('click'); setMenu('MAIN_MENU')">Cancel</div>
+    </div>
+  </div>
+
+  <div id="create-world-menu" class="menu-overlay dirt-bg" style="z-index: 9000;">
+    <div class="title" style="font-size: 2rem; margin-bottom: 20px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Create New World</div>
+    <div style="text-align:left; width:360px;">World Name</div>
+    <input type="text" id="new-world-name" class="input-field" value="New World" maxlength="20">
+    <div style="color:#aaa; font-size:0.9rem; margin-bottom:10px; width:450px; text-align:center;" id="mode-desc">Resources, crafting, gain levels, health and hunger</div>
+    <div style="display:flex; justify-content:center; flex-wrap:wrap; width: 400px;">
+        <div class="btn btn-half" id="btn-world-mode" onclick="playSound('click'); cycleWorldMode()">Game Mode: Survival</div>
+        <div class="btn btn-half" id="btn-world-diff" onclick="playSound('click'); toggleWorldDiff()">Difficulty: Normal</div>
+        <div class="btn btn-half" id="btn-world-type" onclick="playSound('click'); cycleWorldType()">World Type: Default</div>
+        <div class="btn btn-half" id="btn-world-chest" onclick="playSound('click'); toggleChest()">Bonus Chest: OFF</div>
+        <div class="btn btn-half" id="btn-world-cheats" onclick="playSound('click'); toggleCheats()">Allow Cheats: OFF</div>
+    </div>
+    <div style="display:flex; justify-content:center; margin-top: 20px;">
+        <div class="btn btn-half" onclick="playSound('click'); createNewWorld()">Create New World</div>
+        <div class="btn btn-half" onclick="playSound('click'); setMenu('SINGLEPLAYER')">Cancel</div>
+    </div>
+  </div>
+
+  <div id="multiplayer-menu" class="menu-overlay dirt-bg" style="z-index: 9000;">
+    <div class="title" style="font-size: 2rem; margin-bottom: 10px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Play Multiplayer</div>
+    <div class="menu-panel" style="width: 600px;"><div style="width: 100%; text-align: left; color: #aaa; margin-bottom: 10px;">Scanning for games on your local network...</div></div>
+    <div style="display:flex; gap:0px;">
+        <div class="btn btn-half" style="color:#777; border-color:#333; cursor:default;">Join Server</div>
+        <div class="btn btn-half" style="color:#777; border-color:#333; cursor:default;">Direct Connect</div>
+    </div>
+    <div style="display:flex; gap:0px;">
+        <div class="btn btn-half" style="color:#777; border-color:#333; cursor:default;">Add Server</div>
+        <div class="btn btn-half" onclick="playSound('click'); setMenu('MAIN_MENU')">Cancel</div>
+    </div>
+  </div>
+
+  <input type="file" id="pack-import" style="display:none;" accept=".zip,.jar" onchange="importPack(event)">
+  <div id="texture-packs-menu" class="menu-overlay dirt-bg" style="z-index: 9001;">
+    <div class="title" style="font-size: 2rem; margin-bottom: 20px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;" id="pack-menu-title">Select Resource Packs</div>
+    <div class="menu-panel" style="width: 800px; height: 300px; background: transparent; border:none; padding:0;">
+        <div style="display:flex; width:100%; gap: 20px; height: 100%;">
+            <div style="flex:1; display:flex; flex-direction:column;">
+                <div style="text-align:center; margin-bottom:5px; font-weight:bold;">Available</div>
+                <div style="flex: 1; border: 2px solid #444; background: rgba(0,0,0,0.7); display:flex; flex-direction:column; overflow-y:auto; padding: 5px;" id="available-packs">
+                    <div style="display:flex; padding: 10px; background: #333; border: 2px solid #555; margin-bottom: 5px; align-items:center; gap: 10px; cursor:pointer; user-select:none;" id="pack-programmer-art" onclick="togglePack(this)">
+                        <div style="width: 48px; height: 48px; background: #111; border: 2px solid #000; background-size: cover; image-rendering:pixelated;" id="icon-prog-art"></div>
+                        <div><div style="font-weight:bold;">Programmer Art</div><div style="font-size: 0.8em; color:#aaa;">The classic old look.</div></div>
+                    </div>
+                </div>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column;">
+                <div style="text-align:center; margin-bottom:5px; font-weight:bold;">Selected</div>
+                <div style="flex: 1; border: 2px solid #444; background: rgba(0,0,0,0.7); display:flex; flex-direction:column; overflow-y:auto; padding: 5px;" id="selected-packs">
+                    <div style="display:flex; padding: 10px; background: #444; border: 2px solid #888; margin-bottom: 5px; align-items:center; gap: 10px; cursor:default; user-select:none;">
+                        <div style="width: 48px; height: 48px; background: #111; border: 2px solid #000; background-size: cover; image-rendering:pixelated;" id="icon-default"></div>
+                        <div><div style="font-weight:bold;">Default</div><div style="font-size: 0.8em; color:#aaa;">The default look.</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="display:flex; justify-content:center;">
+        <div class="btn btn-half" onclick="playSound('click'); document.getElementById('pack-import').click();">Open Folder</div>
+        <div class="btn btn-half" onclick="playSound('click'); applyTexturePacks();">Done</div>
+    </div>
+  </div>
+
+  <div id="options-menu" class="menu-overlay dirt-bg" style="z-index: 9000;">
+    <div class="title" style="font-size: 2rem; margin-bottom: 20px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Options</div>
+    <div style="width:400px; margin:6px; display:flex; flex-direction:column; align-items:center; margin-bottom:20px;">
+        <div style="text-align:center; text-shadow:1px 1px #000; font-weight:bold;" id="fov-label">FOV: Normal</div>
+        <div class="slider-bg" style="width:100%;" id="fov-slider" onmousedown="startFovDrag(event)">
+            <div class="slider-fill" id="fov-fill"></div><div class="slider-handle" id="fov-handle"></div>
+        </div>
+    </div>
+    <div class="options-grid" style="width: 800px;">
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('video')">Video Settings...</div>
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('skin')">Skin Customization...</div>
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('music')">Music & Sounds...</div>
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('controls')">Controls...</div>
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('language')">Language...</div>
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('chat')">Chat Settings...</div>
+        <div class="btn btn-half" onclick="playSound('click'); openPackMenu('Resource Packs')">Resource Packs...</div>
+        <div class="btn btn-half" onclick="playSound('click'); openPackMenu('Mods')">Mods...</div>
+    </div>
+    <div class="btn" style="width: 400px; margin-top:20px;" onclick="playSound('click'); saveSettings(); setMenu(previousMenu)">Done</div>
+  </div>
+
+  <div id="sub-menu" class="menu-overlay dirt-bg" style="z-index: 9001;">
+    <div class="title" id="sub-menu-title" style="font-size: 2rem; margin-bottom: 20px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Settings</div>
+    <div class="options-grid" id="sub-menu-grid" style="width: 800px; margin-bottom: 20px;"></div>
+    <div class="btn" style="width: 400px;" onclick="playSound('click'); saveSettings(); setMenu('OPTIONS')">Done</div>
+  </div>
+
+  <div id="loading-screen" class="menu-overlay dirt-bg" style="z-index: 9999;">
+    <div class="title" style="font-size: 2.5rem; margin-bottom: 40px; color:#fff; text-shadow:4px 4px 0 #000; font-family:sans-serif;">Generating World...</div>
+    <div style="width: 400px; height: 24px; border: 4px solid #111; background: #333; padding: 2px;"><div id="loading-bar-fill" style="width: 0%; height: 100%; background: #74BC39; transition: width 0.1s;"></div></div>
+  </div>
+
+  <div id="pause-menu" class="menu-overlay" style="background: rgba(0,0,0,0.6);">
+    <div style="font-size:1.5rem;margin-bottom:20px; text-shadow:2px 2px #000; color:white; font-weight:bold;">Game Menu</div>
+    <div class="btn" style="margin-bottom:30px;" onclick="playSound('click'); setMenu('PLAYING')">Back to Game</div>
+    <div class="btn" onclick="playSound('click'); setMenu('OPTIONS')">Options...</div>
+    <div class="btn" onclick="playSound('click'); saveGame(); location.reload()">Save and Quit to Title</div>
+  </div>
+
+  <div id="death-screen" class="menu-overlay">
+    <div style="font-size:4rem; color:#ff0000; text-shadow:4px 4px 0 #333; font-weight:bold; margin-bottom:10px; font-family:sans-serif;">You Died!</div>
+    <div style="font-size:1.5rem; color:#ffff00; text-shadow:2px 2px 0 #333; font-weight:bold; margin-bottom:40px;" id="death-score">Score: &e0</div>
+    <div class="btn" onclick="playSound('click'); respawnPlayer()">Respawn</div>
+    <div class="btn" onclick="playSound('click'); saveGame(); location.reload()">Title Screen</div>
+  </div>
+
+  <div id="inventory-screen" class="menu-overlay">
+    <div class="inv-container" id="inv-box">
+      <div style="display:flex; justify-content:space-between; margin-bottom:10px; width:100%;">
+        <div style="display:flex; gap:10px;">
+            <div style="display:flex; flex-direction:column; gap:4px;"><div class="inv-slot armor-slot" id="armor-0"></div><div class="inv-slot armor-slot" id="armor-1"></div><div class="inv-slot armor-slot" id="armor-2"></div><div class="inv-slot armor-slot" id="armor-3"></div></div>
+            <div style="width:100px; height:156px; background:#222; border:2px solid #000; position:relative;"><div style="position:absolute; bottom:5px; width:100%; text-align:center; color:#555; font-size:10px;">Player</div></div>
+        </div>
+        <div style="text-align:center; color:#333; font-weight:bold; display:flex; flex-direction:column; align-items:center; justify-content:center; margin-left: 20px;">Crafting<br>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; margin-top:5px" id="p-craft-grid"><div class="inv-slot" data-idx="0"></div><div class="inv-slot" data-idx="1"></div><div class="inv-slot" data-idx="2"></div><div class="inv-slot" data-idx="3"></div></div>
+          <div style="margin-top:5px">→ <span id="craft-output" class="inv-slot" style="display:inline-block; vertical-align:middle; cursor:pointer;"></span></div>
+        </div>
+      </div>
+      <div class="inv-main" id="m-inv-grid"></div><div class="inv-main" id="h-inv-grid" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div id="creative-screen" class="menu-overlay">
+    <div class="c-tabs">
+        <div class="c-tab active" id="tab-blocks" onclick="setCreativeTab('blocks')">Building Blocks</div>
+        <div class="c-tab" id="tab-items" onclick="setCreativeTab('items')">Items</div>
+        <div class="c-tab" id="tab-search" onclick="setCreativeTab('search')">Search</div>
+    </div>
+    <div class="inv-container" id="c-inv-box" style="width: 500px; padding: 20px; border-top-left-radius: 0;">
+        <input type="text" id="c-search-input" class="c-search" placeholder="Search items..." style="display:none;" oninput="updateUI()">
+        <div style="display:flex; flex-wrap:wrap; gap:4px; height: 250px; overflow-y:auto; border: 2px solid #555; padding: 5px; background: #999;" id="c-item-grid"></div>
+        <div style="margin-top: 15px; font-weight:bold; color:#333;">Hotbar</div>
+        <div class="inv-main" id="c-h-inv-grid" style="margin-top:5px"></div>
+    </div>
+  </div>
+
+  <div id="crafting-table-screen" class="menu-overlay">
+    <div class="inv-container" id="ct-box">
+      <div style="display:flex; justify-content:center; margin-bottom:10px">
+        <div style="text-align:center; color:#333; font-weight:bold; display:flex; align-items:center;">
+          <div>Crafting<br><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; margin-top:5px" id="ct-craft-grid"><div class="inv-slot" data-idx="0"></div><div class="inv-slot" data-idx="1"></div><div class="inv-slot" data-idx="2"></div><div class="inv-slot" data-idx="3"></div><div class="inv-slot" data-idx="4"></div><div class="inv-slot" data-idx="5"></div><div class="inv-slot" data-idx="6"></div><div class="inv-slot" data-idx="7"></div><div class="inv-slot" data-idx="8"></div></div></div>
+          <div style="margin-left:20px; font-size:24px;">→</div><div style="margin-left:20px;"><span id="ct-craft-output" class="inv-slot" style="display:inline-block; width:50px; height:50px; line-height:50px; cursor:pointer;"></span></div>
+        </div>
+      </div>
+      <div class="inv-main" id="ct-m-inv-grid"></div><div class="inv-main" id="ct-h-inv-grid" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div id="furnace-screen" class="menu-overlay">
+    <div class="inv-container" id="f-box">
+      <div style="display:flex; justify-content:center; margin-bottom:20px; color:#333; font-weight:bold;">Furnace</div>
+      <div style="display:flex; justify-content:center; margin-bottom:10px; align-items:center;">
+        <div style="display:flex; flex-direction:column; align-items:center;"><div class="inv-slot" id="f-input" data-idx="0" style="margin-bottom:2px"></div><div class="inv-slot" style="border:none; background:transparent;"><div style="width:14px;height:14px;background:#555;margin:10px auto;"><div id="f-fire-bar" style="width:100%;height:0%;background:#fa0;position:absolute;bottom:0;"></div></div></div><div class="inv-slot" id="f-fuel" data-idx="1" style="margin-top:2px"></div></div>
+        <div style="width:22px; height:16px; background:#555; position:relative; margin:0 20px;"><div id="f-progress-bar" style="width:0%; height:100%; background:#fff; position:absolute; top:0; left:0;"></div></div>
+        <div class="inv-slot" id="f-output" data-idx="2" style="width:50px; height:50px; line-height:50px"></div>
+      </div>
+      <div class="inv-main" id="f-m-inv-grid"></div><div class="inv-main" id="f-h-inv-grid" style="margin-top:10px"></div>
+    </div>
+  </div>
+  
+  <div id="chest-screen" class="menu-overlay">
+    <div class="inv-container" id="ch-box">
+      <div style="color:#333; font-weight:bold; margin-bottom:5px;">Chest</div>
+      <div style="display:grid; grid-template-columns:repeat(9,36px); gap:4px; justify-content:center;" id="ch-inv-grid"></div>
+      <div style="color:#333; font-weight:bold; margin-top:10px; margin-bottom:5px;">Inventory</div>
+      <div class="inv-main" id="ch-m-inv-grid"></div><div class="inv-main" id="ch-h-inv-grid" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <script src="world.js"></script>
+  <script src="ui.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
