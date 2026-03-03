@@ -1,4 +1,24 @@
-// --- 0.5 MENUS & SETTINGS ---
+// --- 0. GAME SAVING, GLOBALS, & OPTIONS PERSISTENCE ---
+let savedWorlds = {};
+let appSettings = { fov: 75, render: 4, graphics: 1, lighting: 1, music: true, packs: [] };
+let achievements = { wood: false, stone: false, iron: false, diamond: false };
+
+try { 
+    savedWorlds = JSON.parse(localStorage.getItem('orangecraft_worlds') || '{}'); 
+    let s = JSON.parse(localStorage.getItem('orangecraft_settings'));
+    if(s) appSettings = {...appSettings, ...s};
+} catch(e) {}
+
+let activeWorldId = null; let selectedWorldListId = null;
+let newWorldType = "DEFAULT", newWorldMode = "SURVIVAL", newWorldDiff = 1, newWorldChest = false, newWorldCheats = false;
+let modifiedBlocks = {}; let fallingBlocks = [];
+
+let optFov = appSettings.fov, optRender = appSettings.render, optGraphics = appSettings.graphics, optLighting = appSettings.lighting, optMusic = appSettings.music;
+let isProgrammerArt = appSettings.packs.includes('programmer_art');
+
+let player = { hp: 20, maxHp: 20, food: 20, maxFood: 20, saturation: 5.0, dead: false, flying: false, exhaustion: 0.0 };
+let gamerules = { keepInventory: false };
+
 function saveSettings() {
     appSettings = { fov: optFov, render: optRender, graphics: optGraphics, lighting: optLighting, music: optMusic, packs: isProgrammerArt ? ['programmer_art'] : [] };
     localStorage.setItem('orangecraft_settings', JSON.stringify(appSettings));
@@ -45,7 +65,6 @@ function createNewWorld() {
     selectedWorldListId = id; playSelectedWorld();
 }
 function deleteSelectedWorld() { if(selectedWorldListId && savedWorlds[selectedWorldListId]) { if(confirm("Are you sure you want to delete this world? This cannot be undone!")) { delete savedWorlds[selectedWorldListId]; localStorage.setItem('orangecraft_worlds', JSON.stringify(savedWorlds)); selectedWorldListId = null; loadWorldList(); } } }
-
 function playSelectedWorld() {
     if(selectedWorldListId && savedWorlds[selectedWorldListId]) {
         activeWorldId = selectedWorldListId; let w = savedWorlds[activeWorldId];
@@ -56,11 +75,9 @@ function playSelectedWorld() {
         startGame(w);
     }
 }
-
 function saveGame() {
     if(activeWorldId && savedWorlds[activeWorldId] && !player.dead) {
         savedWorlds[activeWorldId].inventory = inventory;
-        // Relying on global cameraGroup and cam from engine.js
         savedWorlds[activeWorldId].pos = { x: cameraGroup.position.x, y: cameraGroup.position.y, z: cameraGroup.position.z, rotX: cam.rotation.x, rotY: targetRotation.y };
         savedWorlds[activeWorldId].modifiedBlocks = modifiedBlocks;
         let savedChests = {}; dynamicBlocks.forEach((v,k)=>{if(v.type==='chest') savedChests[k] = v.slots;});
@@ -72,6 +89,9 @@ function saveGame() {
     }
 }
 
+// --- 0.5 OPTIONS SUB-MENUS & TEXTURE PACK UI ---
+let texCache = {}; let imgDataUrls = {}; let isDraggingFov = false; let previousMenu = "MAIN_MENU";
+
 function startFovDrag(e) { isDraggingFov = true; updateFovDrag(e); }
 document.addEventListener('mousemove', e => { if(isDraggingFov) updateFovDrag(e); }); document.addEventListener('mouseup', () => { isDraggingFov = false; });
 
@@ -80,7 +100,7 @@ function updateFovDrag(e) {
     let pct = Math.max(0, Math.min(1, (e.clientX - bg.left) / bg.width)); optFov = Math.floor(30 + (pct * 80)); 
     document.getElementById('fov-fill').style.width = (pct * 100) + '%'; document.getElementById('fov-handle').style.left = (pct * 100) + '%';
     document.getElementById('fov-label').innerText = "FOV: " + (optFov === 110 ? "Quake Pro" : (optFov === 70 ? "Normal" : optFov));
-    if(typeof cam !== 'undefined' && cam) { cam.fov = optFov; cam.updateProjectionMatrix(); }
+    if(cam) { cam.fov = optFov; cam.updateProjectionMatrix(); }
 }
 function updateOptionsUI() {
     let pct = (optFov - 30) / 80; document.getElementById('fov-fill').style.width = (pct * 100) + '%'; document.getElementById('fov-handle').style.left = (pct * 100) + '%';
@@ -148,6 +168,8 @@ function applyTexturePacks() {
 }
 
 // --- 1. DYNAMIC AUDIO SYSTEM ---
+let audioCtx = null, reverbNode = null, isPlayingMusic = false;
+
 function initAudio() { 
     if(!audioCtx) { 
         audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
@@ -179,7 +201,7 @@ function playSound(type, blockName = '') {
         for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
         let noise = audioCtx.createBufferSource(); noise.buffer = buffer; noise.playbackRate.value = 0.85 + Math.random() * 0.3;
         let filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; 
-        if (['stone', 'cobblestone', 'bedrock', 'furnace', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 'redstone_ore', 'lapis_ore', 'emerald_ore'].includes(blockName) || blockName.endsWith('_block')) { filter.frequency.value = 1800; filter.type = 'highpass'; } 
+        if ['stone', 'cobblestone', 'bedrock', 'furnace', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 'redstone_ore', 'lapis_ore', 'emerald_ore'].includes(blockName) || blockName.endsWith('_block')) { filter.frequency.value = 1800; filter.type = 'highpass'; } 
         else if (blockName.endsWith('_log') || blockName.endsWith('_planks') || blockName === 'crafting_table' || blockName === 'torch' || blockName === 'chest') { filter.frequency.value = 600; } 
         else if (blockName.endsWith('_leaves') || blockName.endsWith('_sapling') || blockName === 'dead_bush' || blockName === 'short_grass' || blockName === 'rose' || blockName === 'dandelion') { filter.frequency.value = 2500; filter.type = 'bandpass'; } 
         else if (blockName === 'sand' || blockName === 'gravel') { filter.frequency.value = 800; filter.type = 'lowpass'; noise.playbackRate.value = 0.6; }
@@ -208,6 +230,8 @@ function playMusic() {
 }
 
 // --- 2. TEXTURES & ASSETS ---
+const authenticSplashes = ["Version 1.01.8!", "Don't starve!", "Chests added!", "Achievements!"];
+
 function getDmgLevel(type, damage) {
     if(!type || (!type.endsWith('_pickaxe') && !type.endsWith('_axe') && !type.endsWith('_shovel') && !type.endsWith('_sword') && !type.endsWith('_hoe'))) return 0;
     let maxD = type.startsWith('diamond_') ? 1561 : type.startsWith('iron_') ? 250 : (type.startsWith('stone_') ? 131 : (type.startsWith('golden_') ? 32 : 59));
@@ -361,17 +385,38 @@ function genTex(type, dmgLevel = 0) {
     texCache[cacheKey] = t; return t;
 }
 
+const crackMats = Array(10).fill(null).map((_, i) => {
+    const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 16; const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false; ctx.fillStyle = "rgba(0,0,0,0.85)";
+    let cx = 7.5, cy = 7.5; let stageProgress = i / 9.0;
+    if(i > 0) { ctx.fillRect(7, 7, 2, 2); for(let a=0; a<Math.PI*2; a+=Math.PI/4) { let len = Math.floor(stageProgress * 8); for(let dist=1; dist<=len; dist++) { if(Math.random() < 0.8) ctx.fillRect(Math.floor(cx + Math.cos(a)*dist), Math.floor(cy + Math.sin(a)*dist), 1, 1); } } }
+    const t = new THREE.CanvasTexture(canvas); t.magFilter = THREE.NearestFilter; return new THREE.MeshBasicMaterial({ map: t, transparent: true, polygonOffset: true, polygonOffsetFactor: -1, depthWrite: false });
+});
+
 genTex('dirt'); document.querySelectorAll('.dirt-bg').forEach(el => el.style.backgroundImage = `url(${imgDataUrls['dirt_0'+(isProgrammerArt?'_old':'')]})`);
 function initPackIcons() {
     genTex('stone'); genTex('grass');
     document.getElementById('icon-prog-art').style.backgroundImage = `url(${imgDataUrls['stone_0_old'] || imgDataUrls['stone_0']})`;
     document.getElementById('icon-default').style.backgroundImage = `url(${imgDataUrls['grass_0']})`;
+    // Pre-gen HUD
     genTex('ui_heart_full'); genTex('ui_heart_half'); genTex('ui_heart_empty');
     genTex('ui_food_full'); genTex('ui_food_half'); genTex('ui_food_empty');
 }
 initPackIcons();
 
+const creativeCategories = {
+    'blocks': ['stone', 'cobblestone', 'dirt', 'grass', 'sand', 'gravel', 'oak_log', 'birch_log', 'oak_planks', 'birch_planks', 'oak_leaves', 'birch_leaves', 'cactus', 'bedrock', 'coal_ore', 'iron_ore', 'gold_ore', 'lapis_ore', 'redstone_ore', 'diamond_ore', 'emerald_ore', 'coal_block', 'iron_block', 'gold_block', 'lapis_block', 'redstone_block', 'diamond_block', 'emerald_block', 'furnace', 'chest', 'crafting_table', 'torch', 'oak_sapling', 'birch_sapling', 'dead_bush', 'short_grass', 'dandelion', 'rose'],
+    'items': ['coal', 'charcoal', 'raw_iron', 'iron_ingot', 'raw_gold', 'gold_ingot', 'lapis_lazuli', 'redstone', 'diamond', 'emerald', 'stick', 'apple', 'wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'golden_pickaxe', 'diamond_pickaxe', 'wooden_axe', 'stone_axe', 'iron_axe', 'golden_axe', 'diamond_axe', 'wooden_shovel', 'stone_shovel', 'iron_shovel', 'golden_shovel', 'diamond_shovel', 'wooden_sword', 'stone_sword', 'iron_sword', 'golden_sword', 'diamond_sword', 'wooden_hoe', 'stone_hoe', 'iron_hoe', 'golden_hoe', 'diamond_hoe']
+};
+let activeCreativeTab = 'blocks';
+
 // --- 3. UI, CHAT, INVENTORY, & LOGIC ---
+let inventory = Array(36).fill(null).map(() => ({type: null, count: 0, damage: 0}));
+let crafting2x2 = Array(4).fill(null).map(() => ({type: null, count: 0, damage: 0}));
+let crafting3x3 = Array(9).fill(null).map(() => ({type: null, count: 0, damage: 0}));
+let activeSlot = 0, dragItem = null, gameState = "MAIN_MENU", drops = [];
+let miningTarget = null, miningProgress = 0, miningSoundTimer = 0;
+
+let chatLog = [];
 function addChatMessage(msg, color="white") {
     chatLog.push(`<span style="color:${color}">${msg}</span>`);
     if(chatLog.length > 20) chatLog.shift();
@@ -432,11 +477,7 @@ document.addEventListener('mousemove', (e) => {
         else { tt.style.display = 'none'; }
     } else { tt.style.display = 'none'; }
     if(dragItem) { document.getElementById('drag-icon').style.left = e.clientX-18+'px'; document.getElementById('drag-icon').style.top = e.clientY-18+'px'; }
-    
-    // Check if cam and targetRotation are available from engine.js
-    if(gameState === "PLAYING" && !isDraggingFov && !player.dead && typeof targetRotation !== 'undefined') { 
-        targetRotation.y -= e.movementX*0.002; targetRotation.x -= e.movementY*0.002; targetRotation.x = Math.max(-1.5, Math.min(1.5, targetRotation.x)); 
-    }
+    if(gameState === "PLAYING" && !isDraggingFov && !player.dead) { targetRotation.y -= e.movementX*0.002; targetRotation.x -= e.movementY*0.002; targetRotation.x = Math.max(-1.5, Math.min(1.5, targetRotation.x)); }
 });
 
 function getIconHTML(type, damage=0) {
@@ -605,8 +646,7 @@ document.addEventListener('mouseup', (e) => {
         let box = gameState === "INV" ? document.getElementById('inv-box') : (gameState === "CRAFTING" ? document.getElementById('ct-box') : (gameState === "CREATIVE" ? document.getElementById('c-inv-box') : (gameState === "CHEST" ? document.getElementById('ch-box') : document.getElementById('f-box'))));
         if(!box.contains(e.target) && e.target.id !== 'drag-icon') { 
             if (gameState === "CREATIVE" && e.target.closest('#c-item-grid')) { playSound('click'); } 
-            // Call dropItemIntoWorld from engine.js
-            else if(dragItem.source !== 'CREATIVE' && typeof dropItemIntoWorld === 'function') { dropItemIntoWorld(dragItem.item.type, dragItem.item.count, dragItem.item.damage); }
+            else if(dragItem.source !== 'CREATIVE') { dropItemIntoWorld(dragItem.item.type, dragItem.item.count, dragItem.item.damage); }
             dragItem = null; document.getElementById('drag-icon').style.display = 'none'; updateUI(); 
         }
     }
@@ -684,40 +724,3 @@ function checkRecipes() {
 }
 
 function processCraft(arr, resultType, amount) { playSound('click'); arr.forEach(c => { if(c.count > 0) c.count--; }); addToInventory(resultType, amount, 0); }
-
-function setMenu(s) {
-  // Uses global gameState from globals.js
-  if(gameState === "INV" || gameState === "CRAFTING" || gameState === "CREATIVE") { let arr = gameState === "INV" ? crafting2x2 : crafting3x3; arr.forEach(c => { if(c.count > 0) { if(typeof dropItemIntoWorld === 'function') dropItemIntoWorld(c.type, c.count, c.damage); c.count = 0; c.type = null; c.damage = 0; } }); }
-  if(gameState === "FURNACE") { activeFurnacePos = null; }
-  if(gameState === "CHEST") { activeChestPos = null; }
-  if(s === "OPTIONS" || s === "TEXTURE_PACKS" || s === "SUB_MENU") { if(gameState === "PAUSE_MENU" || gameState === "PLAYING") previousMenu = "PAUSE_MENU"; else if (gameState !== "OPTIONS" && gameState !== "SUB_MENU" && gameState !== "TEXTURE_PACKS") previousMenu = "MAIN_MENU"; }
-
-  if(s !== "LOADING") {
-      gameState = s; document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
-      document.getElementById('hud').style.display = (s === "PLAYING" || s === "INV" || s === "CRAFTING" || s === "FURNACE" || s === "CREATIVE" || s === "CHAT" || s === "CHEST") ? 'block' : 'none';
-      document.getElementById('crosshair').style.display = s === "PLAYING" ? 'block' : 'none';
-      document.getElementById('chat-container').style.display = (s === "PLAYING" || s === "CHAT") ? 'flex' : 'none';
-      document.getElementById('chat-input-wrapper').style.display = s === "CHAT" ? 'block' : 'none';
-      
-      if(s === "OPTIONS") updateOptionsUI();
-      if(s === "PLAYING") { document.body.requestPointerLock(); if(typeof cam !== 'undefined' && cam) { cam.fov = optFov; cam.updateProjectionMatrix(); } }
-      else { 
-          document.exitPointerLock(); 
-          if(s === "CHAT") { setTimeout(()=>document.getElementById('chat-input').focus(), 10); }
-          else if(s === "PAUSE_MENU") document.getElementById('pause-menu').style.display = 'flex'; 
-          else if(s === "INV") { if(savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE') { document.getElementById('creative-screen').style.display = 'flex'; gameState = "CREATIVE"; } else { document.getElementById('inventory-screen').style.display = 'flex'; } }
-          else if(s === "CRAFTING") document.getElementById('crafting-table-screen').style.display = 'flex'; 
-          else if (s === "FURNACE") document.getElementById('furnace-screen').style.display = 'flex'; 
-          else if (s === "CHEST") document.getElementById('chest-screen').style.display = 'flex'; 
-          else if(s === "MAIN_MENU") document.getElementById('main-menu').style.display = 'flex'; 
-          else if(s === "SINGLEPLAYER") document.getElementById('singleplayer-menu').style.display = 'flex'; 
-          else if(s === "CREATE_WORLD") document.getElementById('create-world-menu').style.display = 'flex'; 
-          else if(s === "MULTIPLAYER") document.getElementById('multiplayer-menu').style.display = 'flex'; 
-          else if(s === "TEXTURE_PACKS") document.getElementById('texture-packs-menu').style.display = 'flex'; 
-          else if(s === "OPTIONS") document.getElementById('options-menu').style.display = 'flex'; 
-          else if(s === "SUB_MENU") document.getElementById('sub-menu').style.display = 'flex'; 
-          else if(s === "DEATH") document.getElementById('death-screen').style.display = 'flex';
-      }
-      if(s !== "CHAT" && s !== "PLAYING") updateUI();
-  }
-}
