@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ORANGECRAFT - 1.01.8</title>
+  <title>ORANGECRAFT - 1.01.9</title>
   <style>
     body{margin:0;overflow:hidden;background:#000;font-family:'Courier New',Courier,monospace;user-select:none;color:#fff; touch-action:none;}
     
@@ -24,7 +24,8 @@
     #hud-canvas { position:absolute; bottom:55px; left:50%; transform:translateX(-50%); width: 360px; height: 40px; pointer-events:none;}
     
     #chat-container { position: absolute; bottom: 70px; left: 10px; width: 450px; display: none; flex-direction: column; z-index: 150; pointer-events:auto;}
-    #chat-log { background: rgba(0,0,0,0.5); color: white; overflow-y: hidden; max-height: 250px; padding: 5px; text-shadow: 1px 1px 0 #000; margin-bottom: 5px; font-family: 'Courier New', monospace; font-size:14px; word-wrap: break-word; }
+    #chat-log { background: transparent; color: white; overflow-y: hidden; max-height: 250px; padding: 5px; text-shadow: 1px 1px 0 #000; margin-bottom: 5px; font-family: 'Courier New', monospace; font-size:14px; word-wrap: break-word; }
+    .chat-msg { transition: opacity 1s ease-out; }
     #chat-input-wrapper { position:relative; width:100%; display:none; }
     #chat-input { background: rgba(0,0,0,0.7); border: 2px solid #555; color: white; padding: 5px; font-family: monospace; outline: none; width: 100%; box-sizing: border-box; font-size:14px; }
     #chat-suggestions { position:absolute; bottom: 100%; left:0; width:100%; background: rgba(0,0,0,0.8); border: 1px solid #555; color:#aaa; font-family:monospace; font-size:12px; display:none; flex-direction:column; padding:2px; }
@@ -47,19 +48,20 @@
     .menu-overlay{position:absolute;width:100%;height:100%;display:none;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.6);z-index:200}
     .dirt-bg { background-color: #5c3a21; box-shadow: inset 0 0 200px rgba(0,0,0,0.9); background-size: 64px; image-rendering: pixelated; }
     
-    .title-container { position:relative; display:inline-block; margin-bottom:40px; }
+    .title-container { position:relative; display:inline-block; margin-bottom:40px; z-index: 10; }
     .title{font-size:5rem;color:#FFA500;text-shadow:6px 6px 0 #333;margin-bottom:0;font-weight:bold;font-family: Impact;}
     .splash{position:absolute;bottom:-15px;right:-40px;color:#ffff00;font-size:1.6rem;font-family: 'Arial Black', sans-serif; font-weight:bold; animation:pulse 0.4s infinite alternate;transform:rotate(-20deg); text-shadow: 2px 2px 0 #3f3f00; pointer-events:none; white-space:nowrap; transform-origin: center;}
     @keyframes pulse{from{transform:rotate(-20deg) scale(0.95)}to{transform:rotate(-20deg) scale(1.05)}}
     
-    .btn{width:360px;padding:12px;margin:6px;background:rgba(85,85,85,0.9);border:4px solid #000;border-top-color:#888;border-left-color:#888;color:#fff;cursor:pointer;text-align:center;font-size:1.2rem; font-weight:bold; box-sizing:border-box;}
+    .btn{width:360px;padding:12px;margin:6px;background:rgba(85,85,85,0.9);border:4px solid #000;border-top-color:#888;border-left-color:#888;color:#fff;cursor:pointer;text-align:center;font-size:1.2rem; font-weight:bold; box-sizing:border-box; z-index: 10;}
     .btn:hover{background:rgba(102,102,102,1)}
     .btn-half{width:176px; display:inline-block; margin:6px;}
     .btn-active{background:rgba(50,150,50,0.9); border-color:#0f0;}
 
-    .inv-container{background:#c6c6c6;padding:15px;border:4px solid #000;display:flex;flex-direction:column;pointer-events:auto;color:#000;box-shadow: 10px 10px 0 rgba(0,0,0,0.6)}
+    .inv-container{background:#c6c6c6;padding:15px;border:4px solid #000;display:flex;flex-direction:column;pointer-events:auto;color:#000;box-shadow: 10px 10px 0 rgba(0,0,0,0.6); position:relative;}
     .inv-main{display:grid;grid-template-columns:repeat(9,36px);gap:4px;justify-content:center;margin-top:10px}
     #drag-icon{position:fixed;pointer-events:none;z-index:1100;width:36px;height:36px;display:none;}
+    .close-btn {position:absolute; top:-15px; right:-15px; width:30px; height:30px; background:#f00; border:2px solid #fff; color:#fff; font-weight:bold; text-align:center; line-height:26px; cursor:pointer; border-radius:50%; z-index:50;}
 
     .c-tabs { display:flex; gap:2px; margin-bottom:-4px; z-index: 10;}
     .c-tab { padding: 8px 15px; background: #8b8b8b; border: 2px solid #333; border-bottom: none; cursor:pointer; font-weight:bold; border-top-left-radius: 4px; border-top-right-radius: 4px; color:#333;}
@@ -70,15 +72,16 @@
     .slider-fill { height: 100%; background: #74BC39; width: 50%; pointer-events:none;}
     .slider-handle { width: 10px; height: 24px; background: #fff; border: 2px solid #000; position:absolute; top: -4px; left: 50%; transform: translateX(-5px); pointer-events:none;}
 
-    .menu-panel { background: rgba(0,0,0,0.5); border: 2px solid #555; width: 600px; height: 350px; display:flex; flex-direction:column; align-items:center; padding: 20px; overflow-x:hidden; overflow-y:auto; margin-bottom: 20px;}
-    .options-grid { display:flex; flex-wrap:wrap; justify-content:center; gap: 4px; width: 750px; }
+    .menu-panel { background: rgba(0,0,0,0.5); border: 2px solid #555; width: 600px; height: 350px; display:flex; flex-direction:column; align-items:center; padding: 20px; overflow-x:hidden; overflow-y:auto; margin-bottom: 20px; z-index:10;}
+    .options-grid { display:flex; flex-wrap:wrap; justify-content:center; gap: 4px; width: 750px; z-index:10;}
     .world-item { width: 90%; background: #444; border: 2px solid #222; padding: 10px; margin-bottom: 8px; cursor:pointer; display:flex; flex-direction:column; border-top-color:#888; border-left-color:#888;}
     .world-item.selected { border: 2px solid #fff; }
     .world-item-title { font-size: 1.2rem; font-weight:bold; margin-bottom: 4px; }
     .world-item-desc { font-size: 0.9rem; color:#aaa; }
-    .input-field { width: 340px; padding: 10px; font-family:'Courier New', monospace; font-size: 1.2rem; background: #000; color:#fff; border: 2px solid #888; margin-bottom: 20px; outline:none;}
+    .input-field { width: 340px; padding: 10px; font-family:'Courier New', monospace; font-size: 1.2rem; background: #000; color:#fff; border: 2px solid #888; margin-bottom: 20px; outline:none; z-index:10;}
     
     #death-screen { background: rgba(200, 0, 0, 0.4); }
+    #suffocation-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background: #000; opacity: 0; pointer-events:none; z-index:50; transition: opacity 0.2s;}
 
     #mobile-controls { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:90; display:none; }
     .touch-zone { position:absolute; pointer-events:auto; }
@@ -89,12 +92,27 @@
     #btn-jump { bottom:30px; right:30px; }
     #btn-action { bottom:110px; right:90px; }
     #btn-place { bottom:30px; right:110px; }
+    #btn-sprint { bottom:110px; left:110px; width:50px; height:50px; line-height:50px; font-size: 20px; }
     #btn-inv { top:20px; right:20px; width:50px; height:50px; line-height:50px; font-size: 20px;}
     #btn-menu { top:20px; left:20px; width:50px; height:50px; line-height:50px; font-size: 24px;}
+    #btn-chat { top:20px; right:80px; width:50px; height:50px; line-height:50px; font-size: 20px;}
+
+    /* Advancements */
+    #advancement-screen { background: rgba(0,0,0,0.8); }
+    .adv-container { width: 600px; height: 400px; background: #c6c6c6; border: 4px solid #000; padding: 20px; overflow-y: auto; pointer-events:auto; position:relative;}
+    .adv-node { display:flex; align-items:center; background: #555; border: 2px solid #222; margin-bottom: 10px; padding: 10px; border-radius: 8px;}
+    .adv-node.unlocked { background: #3c8527; border-color: #55ff55; }
+    .adv-icon { width: 40px; height: 40px; margin-right: 15px; background-size: contain; background-repeat: no-repeat; image-rendering: pixelated;}
+    .adv-text { color: white; text-shadow: 1px 1px 0 #000; }
+    .adv-title { font-weight: bold; font-size: 1.2rem; }
+    .adv-desc { font-size: 0.9rem; color: #ddd; }
+
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body oncontextmenu="return false;">
+
+  <div id="suffocation-overlay"></div>
 
   <div id="mobile-controls">
       <div id="joystick-zone" class="touch-zone">
@@ -103,7 +121,9 @@
       <div id="btn-jump" class="m-btn">▲</div>
       <div id="btn-action" class="m-btn">⛏</div>
       <div id="btn-place" class="m-btn">⬛</div>
+      <div id="btn-sprint" class="m-btn">🏃</div>
       <div id="btn-inv" class="m-btn">🎒</div>
+      <div id="btn-chat" class="m-btn">💬</div>
       <div id="btn-menu" class="m-btn">☰</div>
   </div>
 
@@ -124,7 +144,7 @@
       <div id="hotbar-display"></div>
   </div>
 
-  <div id="main-menu" class="menu-overlay" style="display:flex; background: rgba(0,0,0,0.2);">
+  <div id="main-menu" class="menu-overlay dirt-bg" style="display:flex; z-index: 10000;">
     <div class="title-container">
         <div class="title">ORANGECRAFT</div>
         <div class="splash" id="splash-text"></div>
@@ -212,7 +232,7 @@
 
   <div id="options-menu" class="menu-overlay dirt-bg" style="z-index: 9000;">
     <div class="title" style="font-size: 2rem; margin-bottom: 20px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Options</div>
-    <div style="width:400px; margin:6px; display:flex; flex-direction:column; align-items:center; margin-bottom:20px;">
+    <div style="width:400px; margin:6px; display:flex; flex-direction:column; align-items:center; margin-bottom:20px; z-index:10;">
         <div style="text-align:center; text-shadow:1px 1px #000; font-weight:bold;" id="fov-label">FOV: Normal</div>
         <div class="slider-bg" style="width:100%;" id="fov-slider" onmousedown="startFovDrag(event)">
             <div class="slider-fill" id="fov-fill"></div><div class="slider-handle" id="fov-handle"></div>
@@ -226,7 +246,7 @@
         <div class="btn btn-half" onclick="playSound('click'); setSubMenu('language')">Language...</div>
         <div class="btn btn-half" onclick="playSound('click'); setSubMenu('chat')">Chat Settings...</div>
         <div class="btn btn-half" onclick="playSound('click'); openPackMenu('Resource Packs')">Resource Packs...</div>
-        <div class="btn btn-half" onclick="playSound('click'); openPackMenu('Mods')">Mods...</div>
+        <div class="btn btn-half" onclick="playSound('click'); setSubMenu('mods')">Mods...</div>
     </div>
     <div class="btn" style="width: 400px; margin-top:20px;" onclick="playSound('click'); saveSettings(); setMenu(previousMenu)">Done</div>
   </div>
@@ -245,6 +265,7 @@
   <div id="pause-menu" class="menu-overlay" style="background: rgba(0,0,0,0.6);">
     <div style="font-size:1.5rem;margin-bottom:20px; text-shadow:2px 2px #000; color:white; font-weight:bold;">Game Menu</div>
     <div class="btn" style="margin-bottom:30px;" onclick="playSound('click'); setMenu('PLAYING')">Back to Game</div>
+    <div class="btn" onclick="playSound('click'); setMenu('ADVANCEMENTS')">Advancements</div>
     <div class="btn" onclick="playSound('click'); setMenu('OPTIONS')">Options...</div>
     <div class="btn" onclick="playSound('click'); saveGame(); location.reload()">Save and Quit to Title</div>
   </div>
@@ -256,8 +277,17 @@
     <div class="btn" onclick="playSound('click'); saveGame(); location.reload()">Title Screen</div>
   </div>
 
+  <div id="advancement-screen" class="menu-overlay">
+    <div style="font-size:2rem;margin-bottom:20px; text-shadow:2px 2px #000; color:white; font-weight:bold;">Advancements</div>
+    <div class="adv-container" id="adv-box">
+        <div class="close-btn" onclick="setMenu(previousMenu)">X</div>
+        <div id="adv-list"></div>
+    </div>
+  </div>
+
   <div id="inventory-screen" class="menu-overlay">
     <div class="inv-container" id="inv-box">
+      <div class="close-btn" onclick="setMenu('PLAYING')">X</div>
       <div style="display:flex; justify-content:space-between; margin-bottom:10px; width:100%;">
         <div style="display:flex; gap:10px;">
             <div style="display:flex; flex-direction:column; gap:4px;"><div class="inv-slot armor-slot" id="armor-0"></div><div class="inv-slot armor-slot" id="armor-1"></div><div class="inv-slot armor-slot" id="armor-2"></div><div class="inv-slot armor-slot" id="armor-3"></div></div>
@@ -279,6 +309,7 @@
         <div class="c-tab" id="tab-search" onclick="setCreativeTab('search')">Search</div>
     </div>
     <div class="inv-container" id="c-inv-box" style="width: 500px; padding: 20px; border-top-left-radius: 0;">
+        <div class="close-btn" onclick="setMenu('PLAYING')">X</div>
         <input type="text" id="c-search-input" class="c-search" placeholder="Search items..." style="display:none;" oninput="updateUI()">
         <div style="display:flex; flex-wrap:wrap; gap:4px; height: 250px; overflow-y:auto; border: 2px solid #555; padding: 5px; background: #999;" id="c-item-grid"></div>
         <div style="margin-top: 15px; font-weight:bold; color:#333;">Hotbar</div>
@@ -288,6 +319,7 @@
 
   <div id="crafting-table-screen" class="menu-overlay">
     <div class="inv-container" id="ct-box">
+      <div class="close-btn" onclick="setMenu('PLAYING')">X</div>
       <div style="display:flex; justify-content:center; margin-bottom:10px">
         <div style="text-align:center; color:#333; font-weight:bold; display:flex; align-items:center;">
           <div>Crafting<br><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; margin-top:5px" id="ct-craft-grid"><div class="inv-slot" data-idx="0"></div><div class="inv-slot" data-idx="1"></div><div class="inv-slot" data-idx="2"></div><div class="inv-slot" data-idx="3"></div><div class="inv-slot" data-idx="4"></div><div class="inv-slot" data-idx="5"></div><div class="inv-slot" data-idx="6"></div><div class="inv-slot" data-idx="7"></div><div class="inv-slot" data-idx="8"></div></div></div>
@@ -300,6 +332,7 @@
 
   <div id="furnace-screen" class="menu-overlay">
     <div class="inv-container" id="f-box">
+      <div class="close-btn" onclick="setMenu('PLAYING')">X</div>
       <div style="display:flex; justify-content:center; margin-bottom:20px; color:#333; font-weight:bold;">Furnace</div>
       <div style="display:flex; justify-content:center; margin-bottom:10px; align-items:center;">
         <div style="display:flex; flex-direction:column; align-items:center;"><div class="inv-slot" id="f-input" data-idx="0" style="margin-bottom:2px"></div><div class="inv-slot" style="border:none; background:transparent;"><div style="width:14px;height:14px;background:#555;margin:10px auto;"><div id="f-fire-bar" style="width:100%;height:0%;background:#fa0;position:absolute;bottom:0;"></div></div></div><div class="inv-slot" id="f-fuel" data-idx="1" style="margin-top:2px"></div></div>
@@ -312,6 +345,7 @@
   
   <div id="chest-screen" class="menu-overlay">
     <div class="inv-container" id="ch-box">
+      <div class="close-btn" onclick="setMenu('PLAYING')">X</div>
       <div style="color:#333; font-weight:bold; margin-bottom:5px;">Chest</div>
       <div style="display:grid; grid-template-columns:repeat(9,36px); gap:4px; justify-content:center;" id="ch-inv-grid"></div>
       <div style="color:#333; font-weight:bold; margin-top:10px; margin-bottom:5px;">Inventory</div>
@@ -324,7 +358,7 @@
 
     let savedWorlds = {};
     let appSettings = { fov: 75, render: 4, graphics: 1, lighting: 1, music: true, packs: [] };
-    let achievements = { wood: false, stone: false, iron: false, diamond: false };
+    let achievements = { wood: false, stone: false, iron: false, diamond: false, farm: false };
 
     try { 
         savedWorlds = JSON.parse(localStorage.getItem('orangecraft_worlds') || '{}'); 
@@ -418,12 +452,15 @@
     document.addEventListener('mousemove', e => { if(isDraggingFov) updateFovDrag(e); }); document.addEventListener('mouseup', () => { isDraggingFov = false; });
     
     function updateFovDrag(e) {
+        if(e.touches) e = e.touches[0];
         let bg = document.getElementById('fov-slider').getBoundingClientRect();
         let pct = Math.max(0, Math.min(1, (e.clientX - bg.left) / bg.width)); optFov = Math.floor(30 + (pct * 80)); 
         document.getElementById('fov-fill').style.width = (pct * 100) + '%'; document.getElementById('fov-handle').style.left = (pct * 100) + '%';
         document.getElementById('fov-label').innerText = "FOV: " + (optFov === 110 ? "Quake Pro" : (optFov === 70 ? "Normal" : optFov));
         if(cam) { cam.fov = optFov; cam.updateProjectionMatrix(); }
     }
+    document.getElementById('fov-slider').addEventListener('touchmove', e => { if(isDraggingFov) { e.preventDefault(); updateFovDrag(e); } }, {passive: false});
+
     function updateOptionsUI() {
         let pct = (optFov - 30) / 80; document.getElementById('fov-fill').style.width = (pct * 100) + '%'; document.getElementById('fov-handle').style.left = (pct * 100) + '%';
         document.getElementById('fov-label').innerText = "FOV: " + (optFov === 110 ? "Quake Pro" : (optFov === 70 ? "Normal" : optFov));
@@ -464,6 +501,9 @@
             title = "Music & Sounds";
             content = `<div class="btn btn-half ${optMusic?'btn-active':''}" onclick="playSound('click'); cycleOpt('music', this)">Music: ${optMusic?"ON":"OFF"}</div>
                        <div class="btn btn-half btn-active" onclick="playSound('click'); toggleOptionClass(this)">Master Volume: 100%</div>`;
+        } else if (type === 'mods') {
+            title = "Mods";
+            content = `<div style="color:#aaa; text-align:center; width:100%; margin-bottom:10px;">No mods loaded.</div>`;
         }
         document.getElementById('sub-menu-title').innerText = title; document.getElementById('sub-menu-grid').innerHTML = content; setMenu('SUB_MENU');
     }
@@ -501,7 +541,7 @@
     }
 
     function playSound(type, blockName = '') {
-        if(!audioCtx) return; let now = audioCtx.currentTime; let g = audioCtx.createGain(); g.connect(audioCtx.destination);
+        if(!audioCtx || audioCtx.state === 'suspended') return; let now = audioCtx.currentTime; let g = audioCtx.createGain(); g.connect(audioCtx.destination);
         if(type === 'click') {
             let o = audioCtx.createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(600, now); o.frequency.exponentialRampToValueAtTime(100, now + 0.05);
             g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.05); o.connect(g); o.start(now); o.stop(now + 0.05);
@@ -550,7 +590,7 @@
         playNextNote();
     }
 
-    const authenticSplashes = ["Version 1.01.8!", "Don't starve!", "Chests added!", "Achievements!"];
+    const authenticSplashes = ["Polygons!", "Pixels!", "Now with 100% more blocks!", "Minceraft!", "Punch trees!", "Colormatic!"];
 
     function getDmgLevel(type, damage) {
         if(!type || (!type.endsWith('_pickaxe') && !type.endsWith('_axe') && !type.endsWith('_shovel') && !type.endsWith('_sword') && !type.endsWith('_hoe'))) return 0;
@@ -620,6 +660,10 @@
             drawPixelMap(ctx, {'B':'#800000','C':'#ff3333','D':'#e60000','_':null}, '________________'+'________________'+'________________'+'_______BB_______'+'______BCCB______'+'_____BCDDCB_____'+'____BCDDDDCB____'+'____BCDDDDCB____'+'_____BCDDCB_____'+'______BCCB______'+'_______BB_______'+'________________'+'________________'+'________________'+'________________'+'________________');
         } else if (type === 'apple') {
             drawPixelMap(ctx, {'B':'#000000','C':'#ff0000','D':'#cc0000','S':'#5c3a21','L':'#33cc33','_':null}, '________________'+'________________'+'_______S________'+'______SSL_______'+'______SCCCD_____'+'____CCCCCDD_____'+'___CCCCCCDD_____'+'__CCCCCCDDD_____'+'__CCCCCCDDD_____'+'__CCCCCCDDD_____'+'__CCCCCCDDD_____'+'___CCCCCDDD_____'+'____CCCDDD______'+'________________'+'________________'+'________________');
+        } else if (type === 'wheat_seeds') {
+            drawPixelMap(ctx, {'B':'#222','C':'#5c8230','D':'#a4d66b','_':null}, '________________'+'________________'+'________________'+'________________'+'________________'+'________________'+'_____D_D_D______'+'____CD_D_DC_____'+'____B_CB_CB_____'+'_____B__B_______'+'________________'+'________________'+'________________'+'________________'+'________________'+'________________');
+        } else if (type === 'wheat') {
+            drawPixelMap(ctx, {'A':'#b5840b','B':'#f8d13b','C':'#fceba6','_':null}, '________________'+'________________'+'______B_B_______'+'_____C_C_C______'+'_____A_B_A______'+'_____C_C_C______'+'_____A_B_A______'+'_____C_C_C______'+'______ABA_______'+'_______B________'+'_______A________'+'_______A________'+'_______A________'+'________________'+'________________'+'________________');
         } else if (type.startsWith('raw_')) {
             let p = type==='raw_iron'?{'B':'#333','C':'#eac9b6','D':'#d8af93','_':null} : {'B':'#b5840b','C':'#fceba6','D':'#f8d13b','_':null};
             drawPixelMap(ctx, p, '________________'+'________________'+'......BB........'+'.....BCCB.BB....'+'....BCCCBBCCB...'+'...BCCCCBCCCB...'+'...BCCCCCCDCB...'+'....BDCCCCDCB...'+'.....BBDDDCB....'+'.......BBBB.....'+'________________'+'________________'+'________________'+'________________'+'________________'+'________________');
@@ -701,7 +745,7 @@
         }
 
         imgDataUrls[cacheKey] = canvas.toDataURL(); const t = new THREE.CanvasTexture(canvas); t.magFilter = THREE.NearestFilter; 
-        if((type.endsWith('_leaves') && !isProgrammerArt) || type === 'stick' || type === 'charcoal' || type === 'coal' || type.endsWith('_ingot') || type.startsWith('raw_') || type === 'diamond' || type === 'emerald' || type === 'lapis_lazuli' || type === 'redstone' || type === 'torch' || type === 'apple' || type === 'chest_item' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe') || type.startsWith('ui_')) t.transparent = true; 
+        if((type.endsWith('_leaves') && !isProgrammerArt) || type === 'stick' || type === 'charcoal' || type === 'coal' || type.endsWith('_ingot') || type.startsWith('raw_') || type === 'diamond' || type === 'emerald' || type === 'lapis_lazuli' || type === 'redstone' || type === 'torch' || type === 'apple' || type === 'chest_item' || type === 'wheat_seeds' || type === 'wheat' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe') || type.startsWith('ui_')) t.transparent = true; 
         texCache[cacheKey] = t; return t;
     }
 
@@ -724,7 +768,7 @@
 
     const creativeCategories = {
         'blocks': ['stone', 'cobblestone', 'dirt', 'grass', 'sand', 'gravel', 'oak_log', 'birch_log', 'oak_planks', 'birch_planks', 'oak_leaves', 'birch_leaves', 'cactus', 'bedrock', 'coal_ore', 'iron_ore', 'gold_ore', 'lapis_ore', 'redstone_ore', 'diamond_ore', 'emerald_ore', 'coal_block', 'iron_block', 'gold_block', 'lapis_block', 'redstone_block', 'diamond_block', 'emerald_block', 'furnace', 'chest', 'crafting_table', 'torch', 'oak_sapling', 'birch_sapling', 'dead_bush', 'short_grass', 'dandelion', 'rose'],
-        'items': ['coal', 'charcoal', 'raw_iron', 'iron_ingot', 'raw_gold', 'gold_ingot', 'lapis_lazuli', 'redstone', 'diamond', 'emerald', 'stick', 'apple', 'wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'golden_pickaxe', 'diamond_pickaxe', 'wooden_axe', 'stone_axe', 'iron_axe', 'golden_axe', 'diamond_axe', 'wooden_shovel', 'stone_shovel', 'iron_shovel', 'golden_shovel', 'diamond_shovel', 'wooden_sword', 'stone_sword', 'iron_sword', 'golden_sword', 'diamond_sword', 'wooden_hoe', 'stone_hoe', 'iron_hoe', 'golden_hoe', 'diamond_hoe']
+        'items': ['coal', 'charcoal', 'raw_iron', 'iron_ingot', 'raw_gold', 'gold_ingot', 'lapis_lazuli', 'redstone', 'diamond', 'emerald', 'wheat_seeds', 'wheat', 'stick', 'apple', 'wooden_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'golden_pickaxe', 'diamond_pickaxe', 'wooden_axe', 'stone_axe', 'iron_axe', 'golden_axe', 'diamond_axe', 'wooden_shovel', 'stone_shovel', 'iron_shovel', 'golden_shovel', 'diamond_shovel', 'wooden_sword', 'stone_sword', 'iron_sword', 'golden_sword', 'diamond_sword', 'wooden_hoe', 'stone_hoe', 'iron_hoe', 'golden_hoe', 'diamond_hoe']
     };
     let activeCreativeTab = 'blocks';
 
@@ -736,12 +780,27 @@
     
     let chatLog = [];
     function addChatMessage(msg, color="white") {
-        chatLog.push(`<span style="color:${color}">${msg}</span>`);
+        let msgId = Date.now();
+        chatLog.push({id: msgId, text: `<span style="color:${color}">${msg}</span>`, time: Date.now()});
         if(chatLog.length > 20) chatLog.shift();
+        renderChat();
+    }
+    
+    function renderChat() {
         let logEl = document.getElementById('chat-log');
-        logEl.innerHTML = chatLog.join('<br>');
+        let html = '';
+        let now = Date.now();
+        chatLog.forEach(m => {
+            let age = now - m.time;
+            if(gameState === "CHAT" || age < 5000) {
+                let opacity = gameState === "CHAT" ? 1 : Math.max(0, 1 - (age - 3000)/2000);
+                if(opacity > 0) html += `<div class="chat-msg" style="opacity:${opacity}">${m.text}</div>`;
+            }
+        });
+        logEl.innerHTML = html;
         logEl.scrollTop = logEl.scrollHeight;
     }
+    setInterval(renderChat, 500);
     
     function processCommand(cmd) {
         addChatMessage(cmd, "#aaa");
@@ -768,22 +827,57 @@
         }
     }
 
-    const commandList = ['/gamemode survival', '/gamemode creative', '/gamemode spectator', '/gamemode adventure', '/gamerule keepInventory true', '/gamerule keepInventory false', '/kill', '/help'];
+    const baseCommands = ['/gamemode', '/gamerule', '/kill', '/help'];
+    const commandTree = {
+        '/gamemode': ['survival', 'creative', 'spectator', 'adventure'],
+        '/gamerule': ['keepInventory']
+    };
+    
     document.getElementById('chat-input').addEventListener('input', (e) => {
         let val = e.target.value; let suggBox = document.getElementById('chat-suggestions');
+        let parts = val.split(' ');
         if(val.startsWith('/')) {
-            let matches = commandList.filter(c => c.startsWith(val));
-            if(matches.length > 0) { suggBox.style.display = 'flex'; suggBox.innerHTML = matches.map(m => `<div class="chat-sugg" onclick="document.getElementById('chat-input').value='${m}'; document.getElementById('chat-suggestions').style.display='none'; document.getElementById('chat-input').focus();">${m}</div>`).join(''); } else { suggBox.style.display = 'none'; }
+            let matches = [];
+            if(parts.length === 1) {
+                matches = baseCommands.filter(c => c.startsWith(parts[0]));
+            } else if (parts.length === 2 && commandTree[parts[0]]) {
+                matches = commandTree[parts[0]].filter(c => c.startsWith(parts[1])).map(c => parts[0] + ' ' + c);
+            } else if (parts.length === 3 && parts[0] === '/gamerule' && parts[1] === 'keepInventory') {
+                matches = ['true', 'false'].filter(c => c.startsWith(parts[2])).map(c => parts[0] + ' ' + parts[1] + ' ' + c);
+            } else if (parts.length === 3 && parts[0] === '/gamemode') {
+                matches = ['@a', '@p', '@e', '@r', '@s'].filter(c => c.startsWith(parts[2])).map(c => parts[0] + ' ' + parts[1] + ' ' + c);
+            }
+            if(matches.length > 0) { suggBox.style.display = 'flex'; suggBox.innerHTML = matches.map(m => `<div class="chat-sugg" onclick="document.getElementById('chat-input').value='${m} '; document.getElementById('chat-input').focus(); document.getElementById('chat-input').dispatchEvent(new Event('input'));">${m}</div>`).join(''); } else { suggBox.style.display = 'none'; }
         } else { suggBox.style.display = 'none'; }
     });
+
+    const advancementData = {
+        'wood': { title: 'Getting Wood', desc: 'Attack a tree until a block of wood pops out', icon: 'oak_log' },
+        'stone': { title: 'Time to Mine!', desc: 'Mine stone with your new pickaxe', icon: 'stone' },
+        'iron': { title: 'Acquire Hardware', desc: 'Smelt an iron ingot', icon: 'iron_ingot' },
+        'diamond': { title: 'DIAMONDS!', desc: 'Acquire diamonds', icon: 'diamond' },
+        'farm': { title: 'Seedy Place', desc: 'Plant a seed and watch it grow', icon: 'wheat' }
+    };
 
     function checkAchievement(id) {
         let isCreative = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE';
         let isCheats = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].cheats;
         if (isCreative || isCheats || achievements[id]) return;
         achievements[id] = true;
-        let names = {'wood': 'Getting Wood', 'stone': 'Time to Mine!', 'iron': 'Acquire Hardware', 'diamond': 'DIAMONDS!'};
-        addChatMessage(`Player has made the advancement [${names[id]}]`, "#55ff55");
+        addChatMessage(`Player has made the advancement [${advancementData[id].title}]`, "#55ff55");
+        updateAdvancementsUI();
+    }
+    
+    function updateAdvancementsUI() {
+        let list = document.getElementById('adv-list'); list.innerHTML = '';
+        for(let id in advancementData) {
+            let ad = advancementData[id];
+            let unlocked = achievements[id];
+            list.innerHTML += `<div class="adv-node ${unlocked ? 'unlocked' : ''}">
+                <div class="adv-icon" style="background-image:url(${imgDataUrls[ad.icon+'_0']})"></div>
+                <div class="adv-text"><div class="adv-title">${ad.title}</div><div class="adv-desc">${unlocked ? ad.desc : '???'}</div></div>
+            </div>`;
+        }
     }
 
     function formatName(str) { return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '); }
@@ -804,7 +898,7 @@
         if(type === 'crafting_table') { genTex('ctTop'); genTex('ctSide'); } else if(type.endsWith('_log')) { genTex(type.replace('log','top')); genTex(type); } else if(type === 'grass') { genTex('grass'); genTex('grassSide'); } else if (type === 'farmland') { genTex('farmlandTop'); genTex('dirt'); } else if (type === 'furnace') { genTex('furnaceTop'); genTex('furnaceSide'); genTex('furnaceFront'); } else if (type === 'chest') { genTex('chest_item'); } else genTex(type, dmgLevel);
         
         let html = ''; let suf = isProgrammerArt ? '_old' : '';
-        let is2D = (type === 'stick' || type === 'charcoal' || type === 'coal' || type.endsWith('_ingot') || type.startsWith('raw_') || type === 'diamond' || type === 'emerald' || type === 'lapis_lazuli' || type === 'redstone' || type === 'torch' || type === 'apple' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'chest' || type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe'));
+        let is2D = (type === 'stick' || type === 'charcoal' || type === 'coal' || type.endsWith('_ingot') || type.startsWith('raw_') || type === 'diamond' || type === 'emerald' || type === 'lapis_lazuli' || type === 'redstone' || type === 'torch' || type === 'apple' || type === 'wheat_seeds' || type === 'wheat' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'chest' || type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe'));
         if(is2D) {
             let cacheKey = (type==='chest'?'chest_item':type) + '_' + dmgLevel + suf; html = `<div class="item-2d" style="background-image:url(${imgDataUrls[cacheKey]})"></div>`;
         } else {
@@ -833,7 +927,12 @@
     }
 
     function updateSlotDOM(el, item) { if(item.type) { el.innerHTML = getIconHTML(item.type, item.damage) + (item.count > 1 ? `<span class="item-count">${item.count}</span>` : ''); el.dataset.itemType = item.type; } else { el.innerHTML = ''; delete el.dataset.itemType; } }
-    function createSlot(item, onDown) { let d = document.createElement('div'); d.className = 'inv-slot'; updateSlotDOM(d, item); d.onmousedown = onDown; return d; }
+    function createSlot(item, onDown) { 
+        let d = document.createElement('div'); d.className = 'inv-slot'; updateSlotDOM(d, item); 
+        if(isMobile) { d.addEventListener('touchstart', (e)=>{e.preventDefault(); onDown({button:0, stopPropagation:()=>{}, ctrlKey:false});}, {passive:false}); }
+        else { d.onmousedown = onDown; }
+        return d; 
+    }
 
     function setCreativeTab(tab) {
         activeCreativeTab = tab; document.querySelectorAll('.c-tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-' + tab).classList.add('active');
@@ -854,12 +953,18 @@
         
         if(i < 9) { 
             hInv.appendChild(slot); ctHInv.appendChild(slot2); fHInv.appendChild(slot3); crHInv.appendChild(slot4); chHInv.appendChild(slot5);
-            let hs = document.createElement('div'); hs.className = 'slot' + (i === activeSlot ? ' active' : ''); if(item.type) { hs.innerHTML = getIconHTML(item.type, item.damage) + (item.count > 1 ? `<span class="item-count">${item.count}</span>` : ''); } hDisp.appendChild(hs);
+            let hs = document.createElement('div'); hs.className = 'slot' + (i === activeSlot ? ' active' : ''); if(item.type) { hs.innerHTML = getIconHTML(item.type, item.damage) + (item.count > 1 ? `<span class="item-count">${item.count}</span>` : ''); } 
+            if(isMobile) { hs.addEventListener('touchstart', (e)=>{e.preventDefault(); activeSlot = i; updateUI();}, {passive:false}); }
+            hDisp.appendChild(hs);
         } else { mInv.appendChild(slot); ctMInv.appendChild(slot2); fMInv.appendChild(slot3); chMInv.appendChild(slot5); }
       });
       
-      Array.from(cGrid2.children).forEach((slot, i) => { if(crafting2x2[i].count <= 0) { crafting2x2[i].type = null; crafting2x2[i].count = 0; } updateSlotDOM(slot, crafting2x2[i]); slot.onmousedown = (e) => handleSlotAction(crafting2x2, i, e); });
-      Array.from(cGrid3.children).forEach((slot, i) => { if(crafting3x3[i].count <= 0) { crafting3x3[i].type = null; crafting3x3[i].count = 0; } updateSlotDOM(slot, crafting3x3[i]); slot.onmousedown = (e) => handleSlotAction(crafting3x3, i, e); });
+      Array.from(cGrid2.children).forEach((slot, i) => { if(crafting2x2[i].count <= 0) { crafting2x2[i].type = null; crafting2x2[i].count = 0; } updateSlotDOM(slot, crafting2x2[i]); 
+        if(isMobile) { slot.ontouchstart = (e) => {e.preventDefault(); handleSlotAction(crafting2x2, i, {button:0, stopPropagation:()=>{}});} } else { slot.onmousedown = (e) => handleSlotAction(crafting2x2, i, e); }
+      });
+      Array.from(cGrid3.children).forEach((slot, i) => { if(crafting3x3[i].count <= 0) { crafting3x3[i].type = null; crafting3x3[i].count = 0; } updateSlotDOM(slot, crafting3x3[i]); 
+        if(isMobile) { slot.ontouchstart = (e) => {e.preventDefault(); handleSlotAction(crafting3x3, i, {button:0, stopPropagation:()=>{}});} } else { slot.onmousedown = (e) => handleSlotAction(crafting3x3, i, e); }
+      });
       checkRecipes();
 
       if(gameState === "CREATIVE") {
@@ -872,7 +977,7 @@
               let fakeItem = {type: type, count: 1, damage: 0};
               let slot = createSlot(fakeItem, (e) => {
                   playSound('click'); let maxStack = (type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe')) ? 1 : 64;
-                  if(!dragItem) { dragItem = {item: {type: type, count: e.ctrlKey?maxStack:1, damage: 0}, source: 'CREATIVE', idx: -1}; document.getElementById('drag-icon').style.display = 'block'; document.getElementById('drag-icon').innerHTML = getIconHTML(dragItem.item.type, dragItem.item.damage); }
+                  if(!dragItem) { dragItem = {item: {type: type, count: e.ctrlKey?maxStack:(isMobile?maxStack:1), damage: 0}, source: 'CREATIVE', idx: -1}; document.getElementById('drag-icon').style.display = 'block'; document.getElementById('drag-icon').innerHTML = getIconHTML(dragItem.item.type, dragItem.item.damage); }
               });
               crItemGrid.appendChild(slot);
           });
@@ -890,11 +995,20 @@
           let fd = dynamicBlocks.get(activeFurnacePos);
           if(fd && fd.type === 'furnace') {
               if(fd.slots[0].count <= 0) fd.slots[0].type = null; if(fd.slots[1].count <= 0) fd.slots[1].type = null; if(fd.slots[2].count <= 0) fd.slots[2].type = null;
-              let fIn = document.getElementById('f-input'); updateSlotDOM(fIn, fd.slots[0]); fIn.onmousedown = (e) => handleSlotAction(fd.slots, 0, e);
-              let fFuel = document.getElementById('f-fuel'); updateSlotDOM(fFuel, fd.slots[1]); fFuel.onmousedown = (e) => handleSlotAction(fd.slots, 1, e, true); 
-              let fOut = document.getElementById('f-output'); updateSlotDOM(fOut, fd.slots[2]); fOut.onmousedown = (e) => { 
+              let fIn = document.getElementById('f-input'); updateSlotDOM(fIn, fd.slots[0]); 
+              if(isMobile) fIn.ontouchstart = (e) => {e.preventDefault(); handleSlotAction(fd.slots, 0, {button:0, stopPropagation:()=>{}});} 
+              else fIn.onmousedown = (e) => handleSlotAction(fd.slots, 0, e);
+              
+              let fFuel = document.getElementById('f-fuel'); updateSlotDOM(fFuel, fd.slots[1]); 
+              if(isMobile) fFuel.ontouchstart = (e) => {e.preventDefault(); handleSlotAction(fd.slots, 1, {button:0, stopPropagation:()=>{}}, true);} 
+              else fFuel.onmousedown = (e) => handleSlotAction(fd.slots, 1, e, true); 
+              
+              let fOut = document.getElementById('f-output'); updateSlotDOM(fOut, fd.slots[2]); 
+              let onOut = (e) => { 
                   if(fd.slots[2].type && !dragItem) { playSound('click'); dragItem = {item: {...fd.slots[2]}, source: null, idx: -1}; fd.slots[2].type = null; fd.slots[2].count = 0; document.getElementById('drag-icon').style.display = 'block'; document.getElementById('drag-icon').innerHTML = getIconHTML(dragItem.item.type, dragItem.item.damage); updateUI(); }
               };
+              if(isMobile) fOut.ontouchstart = (e)=>{e.preventDefault(); onOut();}; else fOut.onmousedown = onOut;
+              
               document.getElementById('f-fire-bar').style.height = fd.maxBurnTime > 0 ? `${(fd.burnTime / fd.maxBurnTime) * 100}%` : '0%';
               document.getElementById('f-progress-bar').style.width = fd.maxCookTime > 0 ? `${(fd.cookTime / fd.maxCookTime) * 100}%` : '0%';
           }
@@ -907,7 +1021,10 @@
         const c = document.getElementById('hud-canvas'); const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
         let isCreative = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE';
         let isSpectator = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'SPECTATOR';
-        if(isCreative || isSpectator || gameState !== "PLAYING") return;
+        
+        let hudContainer = document.getElementById('hud-canvas');
+        if(isCreative || isSpectator || gameState !== "PLAYING") { hudContainer.style.display = 'none'; return; }
+        else { hudContainer.style.display = 'block'; }
 
         let hFull = imgDataUrls['ui_heart_full_0'], hHalf = imgDataUrls['ui_heart_half_0'], hEmpty = imgDataUrls['ui_heart_empty_0'];
         let fFull = imgDataUrls['ui_food_full_0'], fHalf = imgDataUrls['ui_food_half_0'], fEmpty = imgDataUrls['ui_food_empty_0'];
@@ -990,6 +1107,7 @@
       else if (tot3 === 1 && c3.includes('lapis_block')) { updateSlotDOM(out3, {type:'lapis_lazuli', count:9}); out3.onclick = () => processCraft(crafting3x3, 'lapis_lazuli', 9); }
       else if (tot3 === 1 && c3.includes('emerald_block')) { updateSlotDOM(out3, {type:'emerald', count:9}); out3.onclick = () => processCraft(crafting3x3, 'emerald', 9); }
       else if (tot3 === 1 && c3.includes('redstone_block')) { updateSlotDOM(out3, {type:'redstone', count:9}); out3.onclick = () => processCraft(crafting3x3, 'redstone', 9); }
+      else if (tot3 === 1 && c3.includes('wheat')) { updateSlotDOM(out3, {type:'wheat_seeds', count:1}); out3.onclick = () => processCraft(crafting3x3, 'wheat_seeds', 1); }
       else if (tot3 === 2 && (((c3[0]&&c3[0].endsWith('_planks'))&&(c3[3]&&c3[3].endsWith('_planks')))||((c3[1]&&c3[1].endsWith('_planks'))&&(c3[4]&&c3[4].endsWith('_planks')))||((c3[2]&&c3[2].endsWith('_planks'))&&(c3[5]&&c3[5].endsWith('_planks')))||((c3[3]&&c3[3].endsWith('_planks'))&&(c3[6]&&c3[6].endsWith('_planks')))||((c3[4]&&c3[4].endsWith('_planks'))&&(c3[7]&&c3[7].endsWith('_planks')))||((c3[5]&&c3[5].endsWith('_planks'))&&(c3[8]&&c3[8].endsWith('_planks'))))) { updateSlotDOM(out3, {type:'stick', count:4}); out3.onclick = () => processCraft(crafting3x3, 'stick', 4); }
       else if (tot3 === 2 && (((c3[0]==='coal'||c3[0]==='charcoal')&&c3[3]==='stick')||((c3[1]==='coal'||c3[1]==='charcoal')&&c3[4]==='stick')||((c3[2]==='coal'||c3[2]==='charcoal')&&c3[5]==='stick')||((c3[3]==='coal'||c3[3]==='charcoal')&&c3[6]==='stick')||((c3[4]==='coal'||c3[4]==='charcoal')&&c3[7]==='stick')||((c3[5]==='coal'||c3[5]==='charcoal')&&c3[8]==='stick'))) { updateSlotDOM(out3, {type:'torch', count:4}); out3.onclick = () => processCraft(crafting3x3, 'torch', 4); }
       else if (tot3 === 4) { let p = (s)=>s&&s.endsWith('_planks'); if ((p(c3[0])&&p(c3[1])&&p(c3[3])&&p(c3[4])) || (p(c3[1])&&p(c3[2])&&p(c3[4])&&p(c3[5])) || (p(c3[3])&&p(c3[4])&&p(c3[6])&&p(c3[7])) || (p(c3[4])&&p(c3[5])&&p(c3[7])&&p(c3[8]))) { updateSlotDOM(out3, {type:'crafting_table', count:1}); out3.onclick = () => processCraft(crafting3x3, 'crafting_table', 1); } }
@@ -1061,7 +1179,7 @@
     let redstoneGlow = new THREE.PointLight(0xff0000, 1.5, 6, 1.2); sc.add(redstoneGlow); redstoneGlow.visible = false;
 
     const boxG = new THREE.BoxGeometry(1, 1, 1); const voxels = new Map(); const dynamicBlocks = new Map(); const chunks = new Map();
-    let RENDER_DIST = optRender; const CHUNK_SIZE = 8; const transparentBlocks = ['oak_leaves', 'birch_leaves', 'torch', 'oak_sapling', 'birch_sapling', 'dead_bush', 'short_grass', 'dandelion', 'rose'];
+    let RENDER_DIST = optRender; const CHUNK_SIZE = 8; const transparentBlocks = ['oak_leaves', 'birch_leaves', 'torch', 'oak_sapling', 'birch_sapling', 'dead_bush', 'short_grass', 'dandelion', 'rose', 'wheat', 'wheat_seeds'];
 
     function getBiome(x, z) {
         let n = Math.sin(x*0.01) + Math.cos(z*0.01) + Math.sin(x*0.05 + z*0.05);
@@ -1094,7 +1212,7 @@
                     let ax = this.cx*CHUNK_SIZE + x; let az = this.cz*CHUNK_SIZE + z;
                     for(let y=getSurfaceH(ax,az)+8; y>=-60; y--){
                         let t = voxels.get(`${ax},${y},${az}`);
-                        if(t && t !== 'torch' && !t.endsWith('_sapling') && t !== 'dead_bush' && t !== 'short_grass' && t !== 'dandelion' && t !== 'rose' && t !== 'furnace' && t !== 'chest' && t !== 'AIR') {
+                        if(t && t !== 'torch' && !t.endsWith('_sapling') && t !== 'dead_bush' && t !== 'short_grass' && t !== 'dandelion' && t !== 'rose' && t !== 'wheat' && t !== 'wheat_seeds' && t !== 'furnace' && t !== 'chest' && t !== 'AIR') {
                             let exposed = false; const adjs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
                             for(let off of adjs) { let nType = voxels.get(`${ax+off[0]},${y+off[1]},${az+off[2]}`); if(!nType || nType === 'AIR' || transparentBlocks.includes(nType)) { exposed = true; break; } }
                             if (transparentBlocks.includes(t)) exposed = true;
@@ -1129,7 +1247,7 @@
 
     function addDynamicBlock(x, y, z, type, faceNormal=null) {
         let key = `${x},${y},${z}`; let b; let em = { emissive: 0x050505 };
-        if (type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose') {
+        if (type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'wheat_seeds' || type === 'wheat') {
             b = new THREE.Group(); let tex = genTex(type);
             let mat = new THREE.MeshLambertMaterial({map: tex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, emissive: type==='torch'?0x222222:0x00});
             let p1 = new THREE.Mesh(new THREE.PlaneGeometry(0.5, type==='torch'?0.6:0.8), mat); p1.rotation.y = Math.PI/4;
@@ -1178,14 +1296,14 @@
 
     function placeB(x, y, z, type, faceNormal=null) {
         let key = `${x},${y},${z}`; voxels.set(key, type); modifiedBlocks[key] = type;
-        if(type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'furnace' || type === 'chest') { addDynamicBlock(x,y,z,type, faceNormal); }
+        if(type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'wheat_seeds' || type === 'wheat' || type === 'furnace' || type === 'chest') { addDynamicBlock(x,y,z,type, faceNormal); }
         else { markChunkDirty(x, z); markChunkDirty(x+1, z); markChunkDirty(x-1, z); markChunkDirty(x, z+1); markChunkDirty(x, z-1); }
         if(type === 'sand' || type === 'gravel') checkFall(x, y, z);
     }
 
     function removeB(x, y, z) {
         let key = `${x},${y},${z}`; let type = voxels.get(key);
-        if(type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'furnace' || type === 'chest') {
+        if(type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'wheat_seeds' || type === 'wheat' || type === 'furnace' || type === 'chest') {
             let b = dynamicBlocks.get(key);
             if(b) {
                 if(type === 'furnace' || type === 'chest') {
@@ -1199,7 +1317,7 @@
         markChunkDirty(x, z); markChunkDirty(x+1, z); markChunkDirty(x-1, z); markChunkDirty(x, z+1); markChunkDirty(x, z-1);
         
         let topKey = `${x},${y+1},${z}`; let topT = voxels.get(topKey);
-        if(topT === 'torch' || topT === 'cactus' || topT === 'sand' || topT === 'gravel' || topT?.endsWith('_sapling') || topT === 'dead_bush' || topT === 'short_grass' || topT === 'dandelion' || topT === 'rose') { 
+        if(topT === 'torch' || topT === 'cactus' || topT === 'sand' || topT === 'gravel' || topT?.endsWith('_sapling') || topT === 'dead_bush' || topT === 'short_grass' || topT === 'dandelion' || topT === 'rose' || topT === 'wheat' || topT === 'wheat_seeds') { 
             if(topT === 'sand' || topT === 'gravel') { checkFall(x, y+1, z); }
             else { removeB(x, y+1, z); dropItemIntoWorld(topT==='dead_bush'?'stick':topT, topT==='dead_bush'?1:1, 0); drops[drops.length-1].mesh.position.set(x, y+1, z); }
         }
@@ -1250,7 +1368,7 @@
                 if(!modifiedBlocks[decKey] && !voxels.has(decKey)) {
                     if(biome === 'DESERT') {
                         if(Math.random() < 0.01) { voxels.set(decKey, 'cactus'); if(Math.random()<0.5) voxels.set(`${absX},${h+2},${absZ}`, 'cactus'); }
-                        else if(Math.random() < 0.02) { voxels.set(decKey, 'dead_bush'); }
+                        else if(Math.random() < 0.04) { voxels.set(decKey, 'dead_bush'); }
                     } else if (biome === 'FOREST') {
                         if (Math.random() < 0.015) { let treeType = Math.random() < 0.5 ? 'oak' : 'birch'; generateTree(absX, h+1, absZ, treeType); }
                         else if (Math.random() < 0.1) { voxels.set(decKey, 'short_grass'); }
@@ -1305,14 +1423,21 @@
                 modifiedBlocks[`${cX+1},${cY},${cZ}`] = 'torch'; modifiedBlocks[`${cX-1},${cY},${cZ}`] = 'torch';
                 modifiedBlocks[`${cX},${cY},${cZ+1}`] = 'torch'; modifiedBlocks[`${cX},${cY},${cZ-1}`] = 'torch';
                 let startChest = Array(27).fill(null).map(() => ({type: null, count: 0, damage: 0}));
-                startChest[0] = {type:'wooden_pickaxe', count:1, damage:0}; startChest[1] = {type:'apple', count:5, damage:0}; startChest[2] = {type:'oak_log', count:10, damage:0};
+                
+                let possibleLoot = [{t:'wooden_pickaxe', c:1}, {t:'wooden_axe', c:1}, {t:'apple', c:Math.floor(Math.random()*3)+1}, {t:'oak_log', c:Math.floor(Math.random()*5)+1}, {t:'stick', c:Math.floor(Math.random()*4)+1}, {t:'bread', c:2}];
+                possibleLoot.forEach(loot => {
+                    let rIdx = Math.floor(Math.random() * 27);
+                    while(startChest[rIdx].type) rIdx = Math.floor(Math.random() * 27);
+                    startChest[rIdx] = {type: loot.t, count: loot.c, damage: 0};
+                });
+                
                 if(!saveData.chests) saveData.chests = {}; saveData.chests[`${cX},${cY},${cZ}`] = startChest;
             }
         }
 
         for(let k in modifiedBlocks) {
             if(modifiedBlocks[k] !== 'AIR') voxels.set(k, modifiedBlocks[k]);
-            if(modifiedBlocks[k] === 'torch' || modifiedBlocks[k].endsWith('_sapling') || modifiedBlocks[k] === 'dead_bush' || modifiedBlocks[k] === 'furnace' || modifiedBlocks[k] === 'chest' || modifiedBlocks[k] === 'short_grass' || modifiedBlocks[k] === 'dandelion' || modifiedBlocks[k] === 'rose') { let coords = k.split(',').map(Number); addDynamicBlock(coords[0], coords[1], coords[2], modifiedBlocks[k], new THREE.Vector3(0,1,0)); }
+            if(modifiedBlocks[k] === 'torch' || modifiedBlocks[k].endsWith('_sapling') || modifiedBlocks[k] === 'dead_bush' || modifiedBlocks[k] === 'furnace' || modifiedBlocks[k] === 'chest' || modifiedBlocks[k] === 'short_grass' || modifiedBlocks[k] === 'dandelion' || modifiedBlocks[k] === 'rose' || modifiedBlocks[k] === 'wheat_seeds' || modifiedBlocks[k] === 'wheat') { let coords = k.split(',').map(Number); addDynamicBlock(coords[0], coords[1], coords[2], modifiedBlocks[k], new THREE.Vector3(0,1,0)); }
         }
 
         let pX = Math.floor(cameraGroup.position.x / CHUNK_SIZE); let pZ = Math.floor(cameraGroup.position.z / CHUNK_SIZE);
@@ -1333,7 +1458,7 @@
       if(gameState === "INV" || gameState === "CRAFTING" || gameState === "CREATIVE") { let arr = gameState === "INV" ? crafting2x2 : crafting3x3; arr.forEach(c => { if(c.count > 0) { dropItemIntoWorld(c.type, c.count, c.damage); c.count = 0; c.type = null; c.damage = 0; } }); }
       if(gameState === "FURNACE") { activeFurnacePos = null; }
       if(gameState === "CHEST") { activeChestPos = null; }
-      if(s === "OPTIONS" || s === "TEXTURE_PACKS" || s === "SUB_MENU") { if(gameState === "PAUSE_MENU" || gameState === "PLAYING") previousMenu = "PAUSE_MENU"; else if (gameState !== "OPTIONS" && gameState !== "SUB_MENU" && gameState !== "TEXTURE_PACKS") previousMenu = "MAIN_MENU"; }
+      if(s === "OPTIONS" || s === "TEXTURE_PACKS" || s === "SUB_MENU") { if(gameState === "PAUSE_MENU" || gameState === "PLAYING" || gameState === "ADVANCEMENTS") previousMenu = gameState === "PLAYING" ? "PAUSE_MENU" : gameState; else if (gameState !== "OPTIONS" && gameState !== "SUB_MENU" && gameState !== "TEXTURE_PACKS") previousMenu = "MAIN_MENU"; }
 
       if(s !== "LOADING") {
           gameState = s; document.querySelectorAll('.menu-overlay').forEach(m => m.style.display = 'none');
@@ -1353,6 +1478,7 @@
               if(isMobile && document.getElementById('mobile-controls')) document.getElementById('mobile-controls').style.display = 'none';
               if(s === "CHAT") { setTimeout(()=>document.getElementById('chat-input').focus(), 10); }
               else if(s === "PAUSE_MENU") document.getElementById('pause-menu').style.display = 'flex'; 
+              else if(s === "ADVANCEMENTS") document.getElementById('advancement-screen').style.display = 'flex'; 
               else if(s === "INV") { if(savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE') { document.getElementById('creative-screen').style.display = 'flex'; gameState = "CREATIVE"; } else { document.getElementById('inventory-screen').style.display = 'flex'; } }
               else if(s === "CRAFTING") document.getElementById('crafting-table-screen').style.display = 'flex'; 
               else if (s === "FURNACE") document.getElementById('furnace-screen').style.display = 'flex'; 
@@ -1378,7 +1504,7 @@
             pos.addScaledVector(dir, step);
             let bx = Math.round(pos.x), by = Math.round(pos.y), bz = Math.round(pos.z); let k = `${bx},${by},${bz}`;
             if(voxels.has(k) && voxels.get(k) !== 'AIR') {
-                if(voxels.get(k) === 'torch' || voxels.get(k).endsWith('_sapling') || voxels.get(k) === 'dead_bush' || voxels.get(k) === 'short_grass' || voxels.get(k) === 'dandelion' || voxels.get(k) === 'rose') { if (Math.abs(pos.x - bx) > 0.25 || Math.abs(pos.z - bz) > 0.25) continue; }
+                if(voxels.get(k) === 'torch' || voxels.get(k).endsWith('_sapling') || voxels.get(k) === 'dead_bush' || voxels.get(k) === 'short_grass' || voxels.get(k) === 'dandelion' || voxels.get(k) === 'rose' || voxels.get(k) === 'wheat_seeds' || voxels.get(k) === 'wheat') { if (Math.abs(pos.x - bx) > 0.25 || Math.abs(pos.z - bz) > 0.25) continue; }
                 if(voxels.get(k) === 'cactus' && (Math.abs(pos.x - bx) > 0.4 || Math.abs(pos.z - bz) > 0.4)) continue;
                 let nx = Math.max(-1, Math.min(1, lastBx - bx)), ny = Math.max(-1, Math.min(1, lastBy - by)), nz = Math.max(-1, Math.min(1, lastBz - bz));
                 if(Math.abs(nx) + Math.abs(ny) + Math.abs(nz) !== 1) {
@@ -1395,7 +1521,7 @@
         for(let j=0; j<amount; j++) {
             let dir = new THREE.Vector3(); cam.getWorldDirection(dir); let dropPos = cameraGroup.position.clone().addScaledVector(dir, 1.2); dropPos.y += 0.2; 
             let drop, mat; let em = { emissive: 0x050505 };
-            let is2D = (type === 'stick' || type === 'charcoal' || type === 'coal' || type.endsWith('_ingot') || type.startsWith('raw_') || type === 'diamond' || type === 'emerald' || type === 'lapis_lazuli' || type === 'redstone' || type === 'torch' || type === 'apple' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'chest' || type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe'));
+            let is2D = (type === 'stick' || type === 'charcoal' || type === 'coal' || type.endsWith('_ingot') || type.startsWith('raw_') || type === 'diamond' || type === 'emerald' || type === 'lapis_lazuli' || type === 'redstone' || type === 'torch' || type === 'apple' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'wheat_seeds' || type === 'wheat' || type === 'chest' || type.endsWith('_pickaxe') || type.endsWith('_axe') || type.endsWith('_shovel') || type.endsWith('_sword') || type.endsWith('_hoe'));
             
             if (is2D) { 
                 let group = new THREE.Group(); let tex = genTex(type, dmgLevel);
@@ -1418,7 +1544,7 @@
 
     const crackMesh = new THREE.Mesh(new THREE.BoxGeometry(1.002, 1.002, 1.002), crackMats[0]); crackMesh.renderOrder = 1; sc.add(crackMesh); crackMesh.visible = false;
 
-    let keys = {}, pVel = new THREE.Vector3(), yVel = 0, stepTimer = 0, globalTick = 0; let highestY = 0; let lastSpacePress = 0;
+    let keys = {}, pVel = new THREE.Vector3(), yVel = 0, stepTimer = 0, globalTick = 0; let highestY = 0; let lastSpacePress = 0; let isSprinting = false;
     
     function applyDamage(amount, sourceStr) {
         if(savedWorlds[activeWorldId] && (savedWorlds[activeWorldId].mode === 'CREATIVE' || savedWorlds[activeWorldId].mode === 'SPECTATOR')) return;
@@ -1443,7 +1569,7 @@
       requestAnimationFrame(animate);
       if(gameState === "LOADING") return;
 
-      let isPaused = (gameState === "PAUSE_MENU" || gameState === "OPTIONS" || gameState === "SUB_MENU" || gameState === "TEXTURE_PACKS" || gameState === "DEATH" || gameState === "MAIN_MENU");
+      let isPaused = (gameState === "PAUSE_MENU" || gameState === "OPTIONS" || gameState === "SUB_MENU" || gameState === "TEXTURE_PACKS" || gameState === "DEATH" || gameState === "MAIN_MENU" || gameState === "ADVANCEMENTS");
 
       if(!isPaused) {
           cam.rotation.x += (targetRotation.x - cam.rotation.x) * 0.22; cam.rotation.y += (targetRotation.y - cam.rotation.y) * 0.22;
@@ -1485,6 +1611,9 @@
                       if (litNow) { let coords = key.split(',').map(Number); let light = new THREE.PointLight(0xffa500, 2.0, 16, 1.2); light.position.set(coords[0], coords[1], coords[2]); sc.add(light); fd.light = light; } else { if (fd.light) { sc.remove(fd.light); fd.light = null; } }
                   }
                   if(gameState === "FURNACE" && activeFurnacePos === key) uiNeedsUpdate = true;
+                } else if (fd.type === 'wheat_seeds' && globalTick % 100 === 0 && Math.random() < 0.1) {
+                    let coords = key.split(',').map(Number);
+                    removeB(coords[0], coords[1], coords[2]); placeB(coords[0], coords[1], coords[2], 'wheat');
                 }
               });
               if(uiNeedsUpdate) updateUI();
@@ -1538,7 +1667,7 @@
 
             let isMoving = (keys['KeyW']||keys['KeyS']||keys['KeyA']||keys['KeyD']); 
             let canSprint = player.food > 3 || isCreative;
-            let isSprinting = (keys['ShiftLeft'] || keys['ShiftRight'] || keys['ControlLeft'] || keys['ControlRight']) && keys['KeyW'] && canSprint;
+            isSprinting = ((keys['ShiftLeft'] || keys['ShiftRight'] || keys['ControlLeft'] || keys['ControlRight'] || keys['SprintMobile']) && keys['KeyW'] && canSprint);
             
             cam.fov = THREE.MathUtils.lerp(cam.fov, isSprinting ? optFov+10 : optFov, 0.1); cam.updateProjectionMatrix();
             let accel = isSprinting ? 0.014 : 0.011; if(player.flying) accel *= 2; let friction = player.flying ? 0.9 : 0.85; pVel.x *= friction; pVel.z *= friction; 
@@ -1553,8 +1682,11 @@
                 cameraGroup.position.x += pVel.x; cameraGroup.position.z += pVel.z;
                 if(keys['Space']) cameraGroup.position.y += 0.4; if(keys['ShiftLeft']) cameraGroup.position.y -= 0.4; yVel = 0;
             } else if (player.flying) {
-                cameraGroup.position.x += pVel.x; cameraGroup.position.z += pVel.z;
-                if(keys['Space']) cameraGroup.position.y += 0.2; if(keys['ShiftLeft']) cameraGroup.position.y -= 0.2; yVel = 0;
+                if(!isSolidVoxel(Math.round(px + pVel.x + Math.sign(pVel.x)*margin), footY, Math.round(pz)) && !isSolidVoxel(Math.round(px + pVel.x + Math.sign(pVel.x)*margin), headY, Math.round(pz))) cameraGroup.position.x += pVel.x; else pVel.x = 0;
+                if(!isSolidVoxel(Math.round(px), footY, Math.round(pz + pVel.z + Math.sign(pVel.z)*margin)) && !isSolidVoxel(Math.round(px), headY, Math.round(pz + pVel.z + Math.sign(pVel.z)*margin))) cameraGroup.position.z += pVel.z; else pVel.z = 0;
+                if(keys['Space']) { if(!isSolidVoxel(Math.round(px), Math.round(cameraGroup.position.y + 0.2), Math.round(pz))) cameraGroup.position.y += 0.2; }
+                if(keys['ShiftLeft']) { if(!isSolidVoxel(Math.round(px), Math.round(cameraGroup.position.y - 1.7), Math.round(pz))) cameraGroup.position.y -= 0.2; }
+                yVel = 0;
             } else {
                 if(!isSolidVoxel(Math.round(px + pVel.x + Math.sign(pVel.x)*margin), footY, Math.round(pz)) && !isSolidVoxel(Math.round(px + pVel.x + Math.sign(pVel.x)*margin), headY, Math.round(pz))) cameraGroup.position.x += pVel.x; else pVel.x = 0;
                 if(!isSolidVoxel(Math.round(px), footY, Math.round(pz + pVel.z + Math.sign(pVel.z)*margin)) && !isSolidVoxel(Math.round(px), headY, Math.round(pz + pVel.z + Math.sign(pVel.z)*margin))) cameraGroup.position.z += pVel.z; else pVel.z = 0;
@@ -1565,7 +1697,17 @@
                     if(highestY - cameraGroup.position.y > 3) { let fallDist = Math.floor(highestY - cameraGroup.position.y) - 3; applyDamage(fallDist, "fell from a high place"); }
                     highestY = cameraGroup.position.y;
                     
-                    if (yVel < -0.1) { let landKey = `${Math.round(cameraGroup.position.x)},${landY},${Math.round(cameraGroup.position.z)}`; if (voxels.get(landKey) === 'farmland' && Math.random() < 0.5) { removeB(Math.round(cameraGroup.position.x), landY, Math.round(cameraGroup.position.z)); placeB(Math.round(cameraGroup.position.x), landY, Math.round(cameraGroup.position.z), 'dirt'); playSound('dig', 'dirt'); } }
+                    if (yVel < -0.1) { 
+                        let landKey = `${Math.round(cameraGroup.position.x)},${landY},${Math.round(cameraGroup.position.z)}`; 
+                        let cropKey = `${Math.round(cameraGroup.position.x)},${landY+1},${Math.round(cameraGroup.position.z)}`; 
+                        let cropType = voxels.get(cropKey);
+                        if(cropType === 'wheat' || cropType === 'wheat_seeds') {
+                            removeB(Math.round(cameraGroup.position.x), landY+1, Math.round(cameraGroup.position.z)); playSound('dig', 'grass');
+                            dropItemIntoWorld(cropType==='wheat'?'wheat':'wheat_seeds', 1, 0);
+                        } else if (voxels.get(landKey) === 'farmland' && Math.random() < 0.5) { 
+                            removeB(Math.round(cameraGroup.position.x), landY, Math.round(cameraGroup.position.z)); placeB(Math.round(cameraGroup.position.x), landY, Math.round(cameraGroup.position.z), 'dirt'); playSound('dig', 'dirt'); 
+                        } 
+                    }
                     yVel = 0; cameraGroup.position.y = landY + 2.1; 
                     if(keys['Space']) yVel = 0.16; 
                 } else if (yVel > 0 && isSolidVoxel(Math.round(cameraGroup.position.x), Math.round(nextY), Math.round(cameraGroup.position.z))) {
@@ -1573,11 +1715,19 @@
                 } else { cameraGroup.position.y = nextY; if(yVel > 0) highestY = cameraGroup.position.y; }
                 
                 let cxInt = Math.round(cameraGroup.position.x), cyInt = Math.round(cameraGroup.position.y - 1.6), czInt = Math.round(cameraGroup.position.z);
-                let footBlock = voxels.get(`${cxInt},${cyInt},${czInt}`);
-                if(footBlock === 'cactus' && globalTick % 10 === 0) { applyDamage(1, "was pricked to death"); }
+                let checkDistCactus = [[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                checkDistCactus.forEach(cd => {
+                    let bCheck = voxels.get(`${cxInt+cd[0]},${cyInt},${czInt+cd[1]}`);
+                    if(bCheck === 'cactus' && globalTick % 20 === 0) { applyDamage(1, "was pricked to death"); }
+                });
                 
                 let headBlock = voxels.get(`${cxInt},${cyInt+1},${czInt}`);
-                if(headBlock === 'sand' || headBlock === 'gravel') { if(globalTick % 20 === 0) applyDamage(1, "suffocated in a wall"); }
+                if(isSolidVoxel(cxInt, cyInt+1, czInt)) { 
+                    if(globalTick % 20 === 0) applyDamage(1, "suffocated in a wall"); 
+                    document.getElementById('suffocation-overlay').style.opacity = '1';
+                } else {
+                    document.getElementById('suffocation-overlay').style.opacity = '0';
+                }
             }
 
             if(cameraGroup.position.y < -65) { if(globalTick % 20 === 0) applyDamage(4, "fell out of the world"); }
@@ -1636,7 +1786,7 @@
                     else if (['dirt', 'grass', 'farmland', 'sand', 'gravel'].includes(name)) { baseHardness = 0.5; if (toolClass === 'shovel') isCorrectTool = true; canHarvest = true; } 
                     else if (['oak_log', 'birch_log', 'oak_planks', 'birch_planks', 'crafting_table', 'chest'].includes(name)) { baseHardness = 1.0; if (toolClass === 'axe') isCorrectTool = true; canHarvest = true; } 
                     else if (name.endsWith('_leaves')) { baseHardness = 0.2; if (toolClass === 'hoe' || toolClass === 'sword') isCorrectTool = true; canHarvest = true; if (toolClass === 'sword') toolSpeed = 1.5; } 
-                    else if (['torch', 'oak_sapling', 'birch_sapling', 'dead_bush', 'short_grass', 'dandelion', 'rose'].includes(name)) { baseHardness = 0.0; canHarvest = true; isCorrectTool = true; } 
+                    else if (['torch', 'oak_sapling', 'birch_sapling', 'dead_bush', 'short_grass', 'dandelion', 'rose', 'wheat_seeds', 'wheat'].includes(name)) { baseHardness = 0.0; canHarvest = true; isCorrectTool = true; } 
                     else if (name === 'cactus') { baseHardness = 0.4; canHarvest = true; }
                     else if (name === 'bedrock') { baseHardness = 9999; canHarvest = isCreative; }
 
@@ -1670,7 +1820,8 @@
                             if (name === 'lapis_ore') { dropName = 'lapis_lazuli'; dropCount = Math.floor(Math.random()*5)+4; }
                             if (name === 'redstone_ore') { dropName = 'redstone'; dropCount = Math.floor(Math.random()*2)+4; }
                             if (name === 'dead_bush') { dropCount = Math.floor(Math.random()*3); }
-                            if (name === 'short_grass') { if(Math.random()<0.1) { dropName='oak_sapling'; dropCount=1; } else dropName=null; }
+                            if (name === 'short_grass') { if(Math.random()<0.1) { dropName='wheat_seeds'; dropCount=1; } else dropName=null; }
+                            if (name === 'wheat') { dropName = 'wheat'; dropCount = 1; dropItemIntoWorld('wheat_seeds', Math.floor(Math.random()*3), 0); }
 
                             if (!canHarvest) dropName = null; 
                             if(dropName && dropCount > 0) { 
@@ -1688,187 +1839,205 @@
                 }
             }
           }
-      } else { if(gameState === "MAIN_MENU") targetRotation.y += 0.001; }
+      } else { if(gameState === "MAIN_MENU") targetRotation.y += 0.002; }
       rnd.render(sc, cam);
     }
 
     document.addEventListener('keydown', e => {
-      if(gameState !== "CHAT") keys[e.code] = true;
-      if(e.code === 'KeyE' && gameState !== "CHAT") { playSound('click'); if(gameState === "INV" || gameState === "CRAFTING" || gameState === "FURNACE" || gameState === "CREATIVE" || gameState === "CHEST") setMenu('PLAYING'); else if(gameState === "PLAYING") setMenu('INV'); }
-      if(e.code === 'KeyT' && gameState === "PLAYING" && !player.dead) { e.preventDefault(); keys['KeyT'] = false; setMenu('CHAT'); }
-      if(e.code === 'Slash' && gameState === "PLAYING" && !player.dead) { e.preventDefault(); keys['Slash'] = false; setMenu('CHAT'); document.getElementById('chat-input').value = '/'; }
-      if(e.code === 'Enter' && gameState === "CHAT") {
-          let v = document.getElementById('chat-input').value.trim();
-          if(v) { if(v.startsWith('/')) processCommand(v); else addChatMessage("<Player> " + v); }
-          document.getElementById('chat-input').value = ''; document.getElementById('chat-suggestions').style.display = 'none'; setMenu('PLAYING');
+      if(document.activeElement.tagName === 'INPUT') {
+          if(e.code === 'Enter' && gameState === "CHAT") {
+              let v = document.getElementById('chat-input').value.trim();
+              if(v) { if(v.startsWith('/')) processCommand(v); else addChatMessage("&lt;Player&gt; " + v); }
+              document.getElementById('chat-input').value = ''; document.getElementById('chat-suggestions').style.display = 'none'; setMenu('PLAYING');
+          }
+          if(e.code === 'Escape' && gameState === "CHAT") { document.getElementById('chat-input').value = ''; document.getElementById('chat-suggestions').style.display = 'none'; setMenu('PLAYING'); }
+          return;
       }
-      if(e.code === 'Escape' && gameState === "CHAT") { document.getElementById('chat-input').value = ''; document.getElementById('chat-suggestions').style.display = 'none'; setMenu('PLAYING'); }
-      
-      if(e.key >= '1' && e.key <= '9' && gameState !== "CHAT") { activeSlot = parseInt(e.key) - 1; updateUI(); }
-      if(e.code === 'KeyQ' && gameState === "PLAYING" && !player.dead) { let slot = inventory[activeSlot]; if(slot.type && slot.count > 0) { let dropAmount = e.ctrlKey ? slot.count : 1; slot.count -= dropAmount; let type = slot.type; let dmg = slot.damage; if(slot.count <= 0) { slot.type = null; slot.damage = 0; } updateUI(); dropItemIntoWorld(type, dropAmount, dmg); } }
-      if(e.code === 'Space' && gameState === "PLAYING" && !player.dead && savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE') {
-          let now = Date.now(); if(now - lastSpacePress < 300) { player.flying = !player.flying; } lastSpacePress = now;
+
+      keys[e.code] = true;
+      if(e.code === 'KeyE') { playSound('click'); if(gameState === "INV" || gameState === "CRAFTING" || gameState === "FURNACE" || gameState === "CREATIVE" || gameState === "CHEST") setMenu('PLAYING'); else if(gameState === "PLAYING") setMenu('INV'); }
+      if(e.code === 'KeyL') { playSound('click'); if(gameState === "ADVANCEMENTS") setMenu('PLAYING'); else if(gameState === "PLAYING") setMenu('ADVANCEMENTS'); }
+      if(e.code === 'Escape') { playSound('click'); if(gameState === "PLAYING") setMenu('PAUSE_MENU'); else if(gameState === "INV" || gameState === "CRAFTING" || gameState === "FURNACE" || gameState === "CREATIVE" || gameState === "CHEST" || gameState === "ADVANCEMENTS") setMenu('PLAYING'); else if(gameState === "OPTIONS" || gameState === "SUB_MENU" || gameState === "TEXTURE_PACKS") setMenu(previousMenu); }
+      if(e.code === 'KeyT' && gameState === "PLAYING") { e.preventDefault(); setMenu('CHAT'); }
+      if(e.code === 'Slash' && gameState === "PLAYING") { e.preventDefault(); setMenu('CHAT'); document.getElementById('chat-input').value = '/'; }
+      if(gameState === "PLAYING" && e.code.startsWith('Digit')) { let d = parseInt(e.key); if(d >= 1 && d <= 9) { activeSlot = d - 1; updateUI(); } }
+      if(e.code === 'Space' && gameState === "PLAYING") {
+          let now = Date.now();
+          if(now - lastSpacePress < 300 && savedWorlds[activeWorldId] && (savedWorlds[activeWorldId].mode === 'CREATIVE' || savedWorlds[activeWorldId].mode === 'SPECTATOR')) { player.flying = !player.flying; yVel = 0; }
+          lastSpacePress = now;
       }
     });
+    
     document.addEventListener('keyup', e => { keys[e.code] = false; });
+    
+    document.addEventListener('wheel', e => {
+        if(gameState !== "PLAYING") return;
+        if(e.deltaY > 0) { activeSlot = (activeSlot + 1) % 9; } else { activeSlot = (activeSlot - 1 + 9) % 9; }
+        updateUI();
+    });
 
+    // Mouse Down for interact/break/place
     document.addEventListener('mousedown', e => {
-      initAudio(); if(!isPlayingMusic && gameState === "PLAYING") playMusic(); if(gameState !== "PLAYING" || player.dead) return;
-      let dir = new THREE.Vector3(); cam.getWorldDirection(dir); dir.normalize(); let hit = fastVoxelRaycast(cameraGroup.position, dir, 6);
-      let isAdventure = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'ADVENTURE';
-      let isSpectator = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'SPECTATOR';
-      let isCreative = savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE';
+        if(gameState !== "PLAYING" || document.pointerLockElement !== document.body || player.dead || isMobile) return;
+        if(e.button === 0) {
+            // Left click: start breaking
+            let lookDir = new THREE.Vector3(); cam.getWorldDirection(lookDir); lookDir.normalize();
+            let hit = fastVoxelRaycast(cameraGroup.position, lookDir, 6);
+            if(hit) { miningTarget = hit; miningProgress = 0; crackMesh.position.set(hit.x, hit.y, hit.z); crackMesh.visible = true; crackMesh.material = crackMats[0]; }
+        } else if(e.button === 2) {
+            // Right click: interact / place
+            let lookDir = new THREE.Vector3(); cam.getWorldDirection(lookDir); lookDir.normalize();
+            let hit = fastVoxelRaycast(cameraGroup.position, lookDir, 6);
+            if(hit) {
+                let k = `${hit.x},${hit.y},${hit.z}`;
+                if(hit.name === 'crafting_table') { setMenu('CRAFTING'); return; }
+                if(hit.name === 'furnace') { activeFurnacePos = k; setMenu('FURNACE'); return; }
+                if(hit.name === 'chest') { activeChestPos = k; setMenu('CHEST'); return; }
+                
+                let activeItem = inventory[activeSlot];
+                if(activeItem && activeItem.type && activeItem.count > 0 && !activeItem.type.endsWith('_pickaxe') && !activeItem.type.endsWith('_axe') && !activeItem.type.endsWith('_shovel') && !activeItem.type.endsWith('_sword') && !activeItem.type.endsWith('_hoe') && activeItem.type !== 'apple' && activeItem.type !== 'coal' && activeItem.type !== 'charcoal' && activeItem.type !== 'raw_iron' && activeItem.type !== 'iron_ingot' && activeItem.type !== 'raw_gold' && activeItem.type !== 'gold_ingot' && activeItem.type !== 'diamond' && activeItem.type !== 'emerald' && activeItem.type !== 'lapis_lazuli' && activeItem.type !== 'redstone' && activeItem.type !== 'stick') {
+                    let placeX = hit.x + hit.normal.x, placeY = hit.y + hit.normal.y, placeZ = hit.z + hit.normal.z;
+                    let pFeetY = Math.floor(cameraGroup.position.y - 1.5), pHeadY = Math.floor(cameraGroup.position.y - 0.5), pX = Math.round(cameraGroup.position.x), pZ = Math.round(cameraGroup.position.z);
+                    
+                    let canPlace = true;
+                    if(activeItem.type === 'wheat_seeds') { if(hit.name === 'farmland' && hit.normal.y === 1 && !voxels.get(`${placeX},${placeY},${placeZ}`)) { placeY = hit.y + 1; } else { canPlace = false; } }
+                    if(activeItem.type === 'short_grass' || activeItem.type === 'dandelion' || activeItem.type === 'rose' || activeItem.type === 'dead_bush' || activeItem.type.endsWith('_sapling')) {
+                        if((hit.name === 'grass' || hit.name === 'dirt') && hit.normal.y === 1 && !voxels.get(`${placeX},${placeY},${placeZ}`)) { placeY = hit.y + 1; } else if (activeItem.type === 'dead_bush' && hit.name === 'sand' && hit.normal.y === 1) { placeY = hit.y + 1; } else { canPlace = false; }
+                    }
+                    if(activeItem.type === 'cactus') { if((hit.name === 'sand' || hit.name === 'cactus') && hit.normal.y === 1 && !voxels.get(`${placeX},${placeY},${placeZ}`)) { placeY = hit.y + 1; } else { canPlace = false; } }
 
-      if(hit) {
-        let item = inventory[activeSlot];
-        if(e.button === 2 && item.type && item.type.endsWith('_hoe') && (hit.name === 'dirt' || hit.name === 'grass') && hit.normal.y === 1 && !isAdventure && !isSpectator) {
-            let topKey = `${hit.x},${hit.y+1},${hit.z}`;
-            if(!voxels.has(topKey) || voxels.get(topKey) === 'AIR') {
-                removeB(hit.x, hit.y, hit.z); placeB(hit.x, hit.y, hit.z, 'farmland'); playSound('dig', 'dirt');
-                item.damage++; let maxD = item.type.startsWith('diamond_') ? 1561 : item.type.startsWith('iron_') ? 250 : (item.type.startsWith('stone_') ? 131 : (item.type.startsWith('golden_') ? 32 : 59)); if (item.damage >= maxD) { playSound('tool_break'); inventory[activeSlot] = {type: null, count: 0, damage: 0}; }
-                updateUI(); return;
+                    if(canPlace && (placeX !== pX || (placeY !== pFeetY && placeY !== pHeadY) || placeZ !== pZ || transparentBlocks.includes(activeItem.type) || activeItem.type === 'torch' || activeItem.type === 'wheat_seeds' || activeItem.type === 'wheat')) {
+                        playSound('place', activeItem.type);
+                        placeB(placeX, placeY, placeZ, activeItem.type, hit.normal);
+                        if(savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode !== 'CREATIVE') { activeItem.count--; if(activeItem.count <= 0) { activeItem.type = null; activeItem.damage = 0; } updateUI(); }
+                        
+                        if(activeItem.type === 'wheat_seeds') checkAchievement('farm');
+                    }
+                } else if (activeItem && activeItem.type === 'apple') {
+                    if(player.food < 20 && savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode !== 'CREATIVE') {
+                        playSound('eat'); player.food = Math.min(20, player.food + 4); player.saturation = Math.min(20, player.saturation + 2.4);
+                        activeItem.count--; if(activeItem.count <= 0) { activeItem.type = null; activeItem.damage = 0; } updateUI();
+                    }
+                }
             }
         }
+    });
 
-        if(e.button === 0 && !isAdventure && !isSpectator) { 
-            miningTarget = {x: hit.x, y: hit.y, z: hit.z, name: hit.name}; miningProgress = 0; miningSoundTimer = 0; crackMesh.position.set(hit.x, hit.y, hit.z); crackMesh.visible = true; 
+    document.addEventListener('mouseup', e => {
+        if(e.button === 0) { miningTarget = null; crackMesh.visible = false; redstoneGlow.visible = false; }
+    });
+
+    // Mobile Controls setup
+    let joyZone = document.getElementById('joystick-zone'); let joyKnob = document.getElementById('joystick-knob');
+    let joyActive = false, joyId = null, joyStartX = 0, joyStartY = 0;
+    
+    joyZone.addEventListener('touchstart', e => { e.preventDefault(); let t = e.changedTouches[0]; joyActive = true; joyId = t.identifier; joyStartX = t.clientX; joyStartY = t.clientY; });
+    joyZone.addEventListener('touchmove', e => {
+        e.preventDefault(); if(!joyActive) return;
+        for(let i=0; i<e.changedTouches.length; i++) {
+            let t = e.changedTouches[i];
+            if(t.identifier === joyId) {
+                let dx = t.clientX - joyStartX; let dy = t.clientY - joyStartY;
+                let dist = Math.sqrt(dx*dx + dy*dy); let maxDist = 40;
+                if(dist > maxDist) { dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
+                joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                
+                keys['KeyW'] = dy < -10; keys['KeyS'] = dy > 10; keys['KeyA'] = dx < -10; keys['KeyD'] = dx > 10;
+            }
         }
-        else if(e.button === 2 && !isSpectator) {
-          if(hit.name === 'crafting_table') { setMenu('CRAFTING'); return; }
-          if(hit.name === 'furnace') { activeFurnacePos = `${hit.x},${hit.y},${hit.z}`; setMenu('FURNACE'); return; }
-          if(hit.name === 'chest') { activeChestPos = `${hit.x},${hit.y},${hit.z}`; setMenu('CHEST'); return; }
-          
-          if(item.type === 'apple' && player.food < 20) {
-              playSound('eat'); player.food = Math.min(20, player.food + 4); player.saturation = Math.min(20, player.saturation + 2.4);
-              if(!isCreative) item.count--; if(item.count<=0) item.type=null; updateUI(); return;
-          }
+    });
+    joyZone.addEventListener('touchend', e => {
+        e.preventDefault();
+        for(let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === joyId) {
+                joyActive = false; joyId = null; joyKnob.style.transform = `translate(0px, 0px)`;
+                keys['KeyW'] = false; keys['KeyS'] = false; keys['KeyA'] = false; keys['KeyD'] = false;
+            }
+        }
+    });
 
-          if((item.type === 'torch' || item.type === 'dead_bush' || item.type?.endsWith('_sapling') || item.type === 'short_grass' || item.type === 'dandelion' || item.type === 'rose') && hit.normal.y !== 1 && item.type !== 'torch') return;
-          if(item.type === 'torch' && hit.normal.y === -1) return;
-          if((item.type?.endsWith('_sapling') || item.type === 'dead_bush' || item.type === 'short_grass' || item.type === 'dandelion' || item.type === 'rose') && (hit.name !== 'grass' && hit.name !== 'dirt' && hit.name !== 'farmland')) return;
-          if(item.type === 'cactus' && hit.name !== 'sand' && hit.name !== 'cactus') return;
+    let setupMobileBtn = (id, k) => {
+        let el = document.getElementById(id);
+        el.addEventListener('touchstart', e => { e.preventDefault(); keys[k] = true; });
+        el.addEventListener('touchend', e => { e.preventDefault(); keys[k] = false; });
+    };
+    setupMobileBtn('btn-jump', 'Space');
+    setupMobileBtn('btn-sprint', 'SprintMobile');
+    
+    document.getElementById('btn-inv').addEventListener('touchstart', e => { e.preventDefault(); playSound('click'); setMenu('INV'); });
+    document.getElementById('btn-menu').addEventListener('touchstart', e => { e.preventDefault(); playSound('click'); setMenu('PAUSE_MENU'); });
+    document.getElementById('btn-chat').addEventListener('touchstart', e => { e.preventDefault(); playSound('click'); setMenu('CHAT'); });
 
-          let nx = hit.x + hit.normal.x, ny = hit.y + hit.normal.y, nz = hit.z + hit.normal.z;
-          if(item.type && !isAdventure) {
-              let isTool = item.type.endsWith('_pickaxe') || item.type.endsWith('_axe') || item.type.endsWith('_shovel') || item.type.endsWith('_sword') || item.type.endsWith('_hoe') || item.type === 'apple' || item.type === 'stick' || item.type === 'coal' || item.type === 'charcoal' || item.type === 'diamond' || item.type === 'emerald' || item.type === 'lapis_lazuli' || item.type === 'redstone' || item.type.startsWith('raw_') || item.type.endsWith('_ingot');
-              if(!isTool) {
-                  let camX = Math.round(cameraGroup.position.x), camY = Math.floor(cameraGroup.position.y), camZ = Math.round(cameraGroup.position.z);
-                  let isIntersectingPlayer = (nx === camX && nz === camZ && (ny === camY || ny === camY - 1 || ny === camY - 2)) && item.type !== 'torch' && item.type !== 'short_grass' && item.type !== 'dandelion' && item.type !== 'rose' && item.type !== 'dead_bush' && !item.type.endsWith('_sapling');
-                  if(isIntersectingPlayer) return;
+    document.getElementById('btn-action').addEventListener('touchstart', e => {
+        e.preventDefault();
+        let lookDir = new THREE.Vector3(); cam.getWorldDirection(lookDir); lookDir.normalize();
+        let hit = fastVoxelRaycast(cameraGroup.position, lookDir, 6);
+        if(hit) { miningTarget = hit; miningProgress = 0; crackMesh.position.set(hit.x, hit.y, hit.z); crackMesh.visible = true; crackMesh.material = crackMats[0]; }
+    });
+    document.getElementById('btn-action').addEventListener('touchend', e => { e.preventDefault(); miningTarget = null; crackMesh.visible = false; redstoneGlow.visible = false; });
 
-                  placeB(nx, ny, nz, item.type, hit.normal);
-                  playSound('place', item.type);
-                  if(!isCreative) item.count--;
-                  if(item.count <= 0) { item.type = null; item.damage = 0; }
-                  updateUI();
-              }
-          }
-        }
-      }
-    });
+    document.getElementById('btn-place').addEventListener('touchstart', e => {
+        e.preventDefault();
+        let lookDir = new THREE.Vector3(); cam.getWorldDirection(lookDir); lookDir.normalize();
+        let hit = fastVoxelRaycast(cameraGroup.position, lookDir, 6);
+        if(hit) {
+            let k = `${hit.x},${hit.y},${hit.z}`;
+            if(hit.name === 'crafting_table') { setMenu('CRAFTING'); return; }
+            if(hit.name === 'furnace') { activeFurnacePos = k; setMenu('FURNACE'); return; }
+            if(hit.name === 'chest') { activeChestPos = k; setMenu('CHEST'); return; }
+            
+            let activeItem = inventory[activeSlot];
+            if(activeItem && activeItem.type && activeItem.count > 0 && !activeItem.type.endsWith('_pickaxe') && !activeItem.type.endsWith('_axe') && !activeItem.type.endsWith('_shovel') && !activeItem.type.endsWith('_sword') && !activeItem.type.endsWith('_hoe') && activeItem.type !== 'apple' && activeItem.type !== 'coal' && activeItem.type !== 'charcoal' && activeItem.type !== 'raw_iron' && activeItem.type !== 'iron_ingot' && activeItem.type !== 'raw_gold' && activeItem.type !== 'gold_ingot' && activeItem.type !== 'diamond' && activeItem.type !== 'emerald' && activeItem.type !== 'lapis_lazuli' && activeItem.type !== 'redstone' && activeItem.type !== 'stick') {
+                let placeX = hit.x + hit.normal.x, placeY = hit.y + hit.normal.y, placeZ = hit.z + hit.normal.z;
+                let pFeetY = Math.floor(cameraGroup.position.y - 1.5), pHeadY = Math.floor(cameraGroup.position.y - 0.5), pX = Math.round(cameraGroup.position.x), pZ = Math.round(cameraGroup.position.z);
+                
+                let canPlace = true;
+                if(activeItem.type === 'wheat_seeds') { if(hit.name === 'farmland' && hit.normal.y === 1 && !voxels.get(`${placeX},${placeY},${placeZ}`)) { placeY = hit.y + 1; } else { canPlace = false; } }
+                if(activeItem.type === 'short_grass' || activeItem.type === 'dandelion' || activeItem.type === 'rose' || activeItem.type === 'dead_bush' || activeItem.type.endsWith('_sapling')) {
+                    if((hit.name === 'grass' || hit.name === 'dirt') && hit.normal.y === 1 && !voxels.get(`${placeX},${placeY},${placeZ}`)) { placeY = hit.y + 1; } else if (activeItem.type === 'dead_bush' && hit.name === 'sand' && hit.normal.y === 1) { placeY = hit.y + 1; } else { canPlace = false; }
+                }
+                if(activeItem.type === 'cactus') { if((hit.name === 'sand' || hit.name === 'cactus') && hit.normal.y === 1 && !voxels.get(`${placeX},${placeY},${placeZ}`)) { placeY = hit.y + 1; } else { canPlace = false; } }
 
-    document.addEventListener('mouseup', e => {
-        if(e.button === 0) { miningTarget = null; crackMesh.visible = false; redstoneGlow.visible = false; }
-    });
+                if(canPlace && (placeX !== pX || (placeY !== pFeetY && placeY !== pHeadY) || placeZ !== pZ || transparentBlocks.includes(activeItem.type) || activeItem.type === 'torch' || activeItem.type === 'wheat_seeds' || activeItem.type === 'wheat')) {
+                    playSound('place', activeItem.type);
+                    placeB(placeX, placeY, placeZ, activeItem.type, hit.normal);
+                    if(savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode !== 'CREATIVE') { activeItem.count--; if(activeItem.count <= 0) { activeItem.type = null; activeItem.damage = 0; } updateUI(); }
+                    if(activeItem.type === 'wheat_seeds') checkAchievement('farm');
+                }
+            } else if (activeItem && activeItem.type === 'apple') {
+                if(player.food < 20 && savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode !== 'CREATIVE') {
+                    playSound('eat'); player.food = Math.min(20, player.food + 4); player.saturation = Math.min(20, player.saturation + 2.4);
+                    activeItem.count--; if(activeItem.count <= 0) { activeItem.type = null; activeItem.damage = 0; } updateUI();
+                }
+            }
+        }
+    });
 
-    document.addEventListener('wheel', e => {
-        if(gameState === "PLAYING") {
-            activeSlot += Math.sign(e.deltaY);
-            if(activeSlot < 0) activeSlot = 8;
-            if(activeSlot > 8) activeSlot = 0;
-            updateUI();
-        }
-    });
+    // Touch drag for mobile camera rotation
+    let touchLookId = null, lastTouchX = 0, lastTouchY = 0;
+    document.body.addEventListener('touchstart', e => {
+        if(gameState !== "PLAYING") return;
+        for(let i=0; i<e.changedTouches.length; i++) {
+            let t = e.changedTouches[i];
+            if(t.clientX > window.innerWidth / 2 && !e.target.closest('.m-btn')) { touchLookId = t.identifier; lastTouchX = t.clientX; lastTouchY = t.clientY; }
+        }
+    }, {passive: false});
+    
+    document.body.addEventListener('touchmove', e => {
+        if(gameState !== "PLAYING") return;
+        for(let i=0; i<e.changedTouches.length; i++) {
+            let t = e.changedTouches[i];
+            if(t.identifier === touchLookId) {
+                let dx = t.clientX - lastTouchX; let dy = t.clientY - lastTouchY;
+                targetRotation.y -= dx * 0.005; targetRotation.x -= dy * 0.005; targetRotation.x = Math.max(-1.5, Math.min(1.5, targetRotation.x));
+                lastTouchX = t.clientX; lastTouchY = t.clientY;
+            }
+        }
+    }, {passive: false});
+    
+    document.body.addEventListener('touchend', e => { for(let i=0; i<e.changedTouches.length; i++) { if(e.changedTouches[i].identifier === touchLookId) touchLookId = null; } });
 
-    // --- Mobile Controls Setup ---
-    if (isMobile) {
-        let joyZone = document.getElementById('joystick-zone');
-        let joyKnob = document.getElementById('joystick-knob');
-        let joyActive = false, joyCenter = {x:0, y:0};
-        
-        joyZone.addEventListener('touchstart', e => {
-            e.preventDefault(); joyActive = true;
-            let touch = e.changedTouches[0];
-            let rect = joyZone.getBoundingClientRect();
-            joyCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
-            updateJoy(touch);
-        }, {passive: false});
-        
-        joyZone.addEventListener('touchmove', e => {
-            e.preventDefault(); if(joyActive) updateJoy(e.changedTouches[0]);
-        }, {passive: false});
-        
-        let updateJoy = (t) => {
-            let dx = t.clientX - joyCenter.x, dy = t.clientY - joyCenter.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            let maxDist = 40;
-            if(dist > maxDist) { dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
-            joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-            
-            keys['KeyW'] = dy < -10; keys['KeyS'] = dy > 10;
-            keys['KeyA'] = dx < -10; keys['KeyD'] = dx > 10;
-        };
-        
-        joyZone.addEventListener('touchend', e => {
-            e.preventDefault(); joyActive = false;
-            joyKnob.style.transform = `translate(0px, 0px)`;
-            keys['KeyW'] = keys['KeyS'] = keys['KeyA'] = keys['KeyD'] = false;
-        }, {passive: false});
-
-        document.getElementById('btn-jump').addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; }, {passive: false});
-        document.getElementById('btn-jump').addEventListener('touchend', e => { e.preventDefault(); keys['Space'] = false; }, {passive: false});
-        
-        document.getElementById('btn-action').addEventListener('touchstart', e => {
-            e.preventDefault(); document.dispatchEvent(new MouseEvent('mousedown', {button: 0}));
-        }, {passive: false});
-        document.getElementById('btn-action').addEventListener('touchend', e => {
-            e.preventDefault(); document.dispatchEvent(new MouseEvent('mouseup', {button: 0}));
-        }, {passive: false});
-        
-        document.getElementById('btn-place').addEventListener('touchstart', e => {
-            e.preventDefault(); document.dispatchEvent(new MouseEvent('mousedown', {button: 2}));
-        }, {passive: false});
-        
-        document.getElementById('btn-inv').addEventListener('touchstart', e => {
-            e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyE'}));
-        }, {passive: false});
-        
-        document.getElementById('btn-menu').addEventListener('touchstart', e => {
-            e.preventDefault(); setMenu('PAUSE_MENU');
-        }, {passive: false});
-        
-        let touchLookActive = false, lastTouchX, lastTouchY;
-        document.addEventListener('touchstart', e => {
-            if(e.target.closest('.touch-zone') || e.target.closest('.m-btn') || gameState !== "PLAYING") return;
-            touchLookActive = true;
-            lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
-        }, {passive: false});
-        document.addEventListener('touchmove', e => {
-            if(touchLookActive && gameState === "PLAYING") {
-                let dx = e.touches[0].clientX - lastTouchX;
-                let dy = e.touches[0].clientY - lastTouchY;
-                targetRotation.y -= dx * 0.005;
-                targetRotation.x -= dy * 0.005;
-                targetRotation.x = Math.max(-1.5, Math.min(1.5, targetRotation.x));
-                lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
-            }
-        }, {passive: false});
-        document.addEventListener('touchend', e => { touchLookActive = false; });
-    }
-
-    // --- Game Initialization ---
-    window.addEventListener('resize', () => {
-        cam.aspect = window.innerWidth / window.innerHeight;
-        cam.updateProjectionMatrix();
-        rnd.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    loadWorldList();
-    let splashText = authenticSplashes[Math.floor(Math.random() * authenticSplashes.length)];
-    document.getElementById('splash-text').innerText = splashText;
-    setMenu('MAIN_MENU');
-    updateUI();
-    animate();
-  </script>
+    requestAnimationFrame(animate);
+  </script>
 </body>
 </html>
