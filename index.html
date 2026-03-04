@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ORANGECRAFT - 1.02.0</title>
+  <title>ORANGECRAFT - 1.03.0 Multiplayer Update</title>
   <style>
     body{margin:0;overflow:hidden;background:#000;font-family:'Courier New',Courier,monospace;user-select:none;color:#fff; touch-action:none;}
     
@@ -106,19 +106,17 @@
     .adv-text { color: white; text-shadow: 1px 1px 0 #000; }
     .adv-title { font-weight: bold; font-size: 1.2rem; }
     .adv-desc { font-size: 0.9rem; color: #ddd; }
-
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body oncontextmenu="return false;">
 
   <div id="suffocation-overlay"></div>
 
   <div id="mobile-controls">
-      <div id="joystick-zone" class="touch-zone">
-          <div id="joystick-knob"></div>
-      </div>
+      <div id="joystick-zone" class="touch-zone"><div id="joystick-knob"></div></div>
       <div id="btn-jump" class="m-btn">▲</div>
       <div id="btn-action" class="m-btn">⛏</div>
       <div id="btn-place" class="m-btn">⬛</div>
@@ -189,13 +187,22 @@
 
   <div id="multiplayer-menu" class="menu-overlay dirt-bg" style="z-index: 9000;">
     <div class="title" style="font-size: 2rem; margin-bottom: 10px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Play Multiplayer</div>
-    <div class="menu-panel" style="width: 600px;"><div style="width: 100%; text-align: left; color: #aaa; margin-bottom: 10px;">Scanning for games on your local network...</div></div>
-    <div style="display:flex; gap:0px;">
-        <div class="btn btn-half" style="color:#777; border-color:#333; cursor:default;">Join Server</div>
-        <div class="btn btn-half" style="color:#777; border-color:#333; cursor:default;">Direct Connect</div>
+    <div class="menu-panel" style="width: 600px; height: 180px;">
+        <div style="width: 100%; text-align: center; color: #aaa; margin-bottom: 20px;">Connect directly via Peer-to-Peer!</div>
+        <div style="display:flex; width: 100%; justify-content: space-around; gap: 20px;">
+            <div style="flex: 1; border: 2px solid #555; padding: 10px; text-align:center;">
+                <div style="font-weight:bold; margin-bottom: 10px;">Host a Game</div>
+                <div class="btn" style="width:90%;" onclick="playSound('click'); hostMultiplayerGame()">Host Server</div>
+                <div id="host-id-display" style="color:#ffaa00; margin-top:10px; font-weight:bold; word-break:break-all;"></div>
+            </div>
+            <div style="flex: 1; border: 2px solid #555; padding: 10px; text-align:center;">
+                <div style="font-weight:bold; margin-bottom: 10px;">Join a Game</div>
+                <input type="text" id="join-id-input" class="input-field" style="width: 90%; margin-bottom: 10px; padding:5px; font-size:14px;" placeholder="Enter Host ID...">
+                <div class="btn" style="width:90%;" onclick="playSound('click'); joinMultiplayerGame()">Join Server</div>
+            </div>
+        </div>
     </div>
     <div style="display:flex; gap:0px;">
-        <div class="btn btn-half" style="color:#777; border-color:#333; cursor:default;">Add Server</div>
         <div class="btn btn-half" onclick="playSound('click'); setMenu('MAIN_MENU')">Cancel</div>
     </div>
   </div>
@@ -255,7 +262,7 @@
   <div id="sub-menu" class="menu-overlay dirt-bg" style="z-index: 9001;">
     <div class="title" id="sub-menu-title" style="font-size: 2rem; margin-bottom: 20px; color:#fff; text-shadow:2px 2px 0 #000; font-family:sans-serif;">Settings</div>
     <div class="options-grid" id="sub-menu-grid" style="width: 800px; margin-bottom: 20px;"></div>
-    <div class="btn" style="width: 400px;" onclick="playSound('click'); saveSettings(); setMenu('OPTIONS')">Done</div>
+    <div class="btn" id="sub-menu-done-btn" style="width: 400px;" onclick="playSound('click'); saveSettings(); setMenu('OPTIONS')">Done</div>
   </div>
 
   <div id="loading-screen" class="menu-overlay dirt-bg" style="z-index: 9999;">
@@ -265,9 +272,9 @@
 
   <div id="pause-menu" class="menu-overlay" style="background: rgba(0,0,0,0.6);">
     <div style="font-size:1.5rem;margin-bottom:20px; text-shadow:2px 2px #000; color:white; font-weight:bold;">Game Menu</div>
-    <div class="btn" style="margin-bottom:30px;" onclick="playSound('click'); setMenu('PLAYING')">Back to Game</div>
-    <div class="btn" onclick="playSound('click'); setMenu('ADVANCEMENTS')">Advancements</div>
-    <div class="btn" onclick="playSound('click'); setMenu('OPTIONS')">Options...</div>
+    <div class="btn" id="pm-back-btn" style="margin-bottom:30px;" onclick="playSound('click'); setMenu('PLAYING')">Back to Game</div>
+    <div class="btn" id="pm-adv-btn" onclick="playSound('click'); setMenu('ADVANCEMENTS')">Advancements</div>
+    <div class="btn" id="pm-opt-btn" onclick="playSound('click'); setMenu('OPTIONS')">Options...</div>
     <div class="btn" onclick="playSound('click'); saveGame(); location.reload()">Save and Quit to Title</div>
   </div>
 
@@ -279,7 +286,7 @@
   </div>
 
   <div id="advancement-screen" class="menu-overlay">
-    <div style="font-size:2rem;margin-bottom:20px; text-shadow:2px 2px #000; color:white; font-weight:bold;">Advancements</div>
+    <div style="font-size:2rem;margin-bottom:20px; text-shadow:2px 2px #000; color:white; font-weight:bold;" id="adv-title-header">Advancements</div>
     <div class="adv-container" id="adv-box">
         <div class="close-btn" onclick="setMenu(previousMenu)">X</div>
         <div id="adv-list"></div>
@@ -363,7 +370,7 @@
     }
 
     let savedWorlds = {};
-    let appSettings = { fov: 75, render: 4, graphics: 1, lighting: 1, music: true, packs: [] };
+    let appSettings = { fov: 75, render: 4, graphics: 1, lighting: 1, music: true, packs: [], lang: 'en_us' };
     let achievements = {};
 
     try { 
@@ -377,13 +384,42 @@
     let modifiedBlocks = {}; let fallingBlocks = [];
     
     let optFov = appSettings.fov, optRender = appSettings.render, optGraphics = appSettings.graphics, optLighting = appSettings.lighting, optMusic = appSettings.music;
-    let isProgrammerArt = appSettings.packs.includes('programmer_art');
+    let isProgrammerArt = appSettings.packs && appSettings.packs.includes('programmer_art');
+    let currentLang = appSettings.lang || 'en_us';
     
     let player = { hp: 20, maxHp: 20, food: 20, maxFood: 20, saturation: 5.0, dead: false, flying: false, exhaustion: 0.0 };
     let gamerules = { keepInventory: false };
 
+    // MULTIPLAYER STATE
+    let myPeer = null; let myConn = null; let isHost = false; 
+    let otherPlayers = {}; // Stores meshes for remote players
+
+    const langMap = {
+        'en_us': { done: 'Done', back: 'Back to Game', adv: 'Advancements', opt: 'Options...' },
+        'es_es': { done: 'Hecho', back: 'Volver al juego', adv: 'Progresos', opt: 'Opciones...' },
+        'pl_pl': { done: 'Gotowe', back: 'Powrót do gry', adv: 'Postępy', opt: 'Opcje...' },
+        'pirate': { done: 'Aye', back: 'Return t\' the Sea', adv: 'Bounty', opt: 'Captain\'s Log...' }
+    };
+
+    function applyLanguage() {
+        let l = langMap[currentLang] || langMap['en_us'];
+        document.getElementById('sub-menu-done-btn').innerText = l.done;
+        document.getElementById('pm-back-btn').innerText = l.back;
+        document.getElementById('pm-adv-btn').innerText = l.adv;
+        document.getElementById('pm-opt-btn').innerText = l.opt;
+        document.getElementById('adv-title-header').innerText = l.adv;
+    }
+    applyLanguage();
+
+    function setLanguage(langStr, el) {
+        currentLang = langStr;
+        document.querySelectorAll('#sub-menu-grid .btn').forEach(b => b.classList.remove('btn-active'));
+        if(el) el.classList.add('btn-active');
+        applyLanguage();
+    }
+
     function saveSettings() {
-        appSettings = { fov: optFov, render: optRender, graphics: optGraphics, lighting: optLighting, music: optMusic, packs: isProgrammerArt ? ['programmer_art'] : [] };
+        appSettings = { fov: optFov, render: optRender, graphics: optGraphics, lighting: optLighting, music: optMusic, packs: isProgrammerArt ? ['programmer_art'] : [], lang: currentLang };
         localStorage.setItem('orangecraft_settings', JSON.stringify(appSettings));
         if(isProgrammerArt) document.body.classList.add('prog-art'); else document.body.classList.remove('prog-art');
     }
@@ -452,6 +488,86 @@
         }
     }
 
+    // --- MULTIPLAYER WEBRTC LOGIC ---
+    function sendMPData(data) {
+        if(myConn && myConn.open) { myConn.send(data); }
+    }
+
+    function setupNetworkListeners(conn) {
+        conn.on('data', (data) => {
+            if(data.type === 'chat') { addChatMessage("[Remote] " + data.msg, "#ffffaa"); }
+            if(data.type === 'sync_world') {
+                // We just joined, apply host's modified blocks
+                modifiedBlocks = data.modifiedBlocks;
+                for(let k in modifiedBlocks) {
+                    let coords = k.split(',').map(Number);
+                    if(modifiedBlocks[k] === 'AIR') { removeB(coords[0], coords[1], coords[2]); }
+                    else { placeB(coords[0], coords[1], coords[2], modifiedBlocks[k]); }
+                }
+                addChatMessage("World synced with Host!", "#55ff55");
+            }
+            if(data.type === 'place') { placeB(data.x, data.y, data.z, data.bType); playSound('place', data.bType); }
+            if(data.type === 'break') { removeB(data.x, data.y, data.z); playSound('break', 'stone'); }
+            if(data.type === 'pos') {
+                if(!otherPlayers[conn.peer]) {
+                    // Create a dummy mesh for the other player
+                    let geo = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+                    let mat = new THREE.MeshLambertMaterial({color: 0x00ff00});
+                    let mesh = new THREE.Mesh(geo, mat);
+                    sc.add(mesh);
+                    otherPlayers[conn.peer] = mesh;
+                }
+                // Lerp might be smoother, but direct set is easier for now
+                otherPlayers[conn.peer].position.set(data.x, data.y, data.z);
+            }
+        });
+        conn.on('close', () => { addChatMessage("Connection closed.", "#ff5555"); if(otherPlayers[conn.peer]) { sc.remove(otherPlayers[conn.peer]); delete otherPlayers[conn.peer]; } });
+    }
+
+    function hostMultiplayerGame() {
+        if(typeof Peer === 'undefined') { alert("PeerJS library failed to load. Are you offline?"); return; }
+        document.getElementById('host-id-display').innerText = "Connecting to signaling server...";
+        myPeer = new Peer();
+        myPeer.on('open', (id) => {
+            document.getElementById('host-id-display').innerText = id;
+            isHost = true;
+        });
+        myPeer.on('connection', (conn) => {
+            myConn = conn; // only supports 1 remote player for this simple demo
+            addChatMessage("A player joined the game!", "#55ff55");
+            setupNetworkListeners(myConn);
+            myConn.on('open', () => {
+                // Send current world state
+                myConn.send({ type: 'sync_world', modifiedBlocks: modifiedBlocks });
+            });
+        });
+        // Create a temporary world to host
+        activeWorldId = 'mp_host_' + Date.now();
+        savedWorlds[activeWorldId] = { name: "MP Host", type: "DEFAULT", mode: "SURVIVAL", cheats: true, modifiedBlocks: {} };
+        startGame(savedWorlds[activeWorldId]);
+    }
+
+    function joinMultiplayerGame() {
+        let hostId = document.getElementById('join-id-input').value.trim();
+        if(!hostId) return;
+        if(typeof Peer === 'undefined') { alert("PeerJS library failed to load."); return; }
+        
+        myPeer = new Peer();
+        myPeer.on('open', (id) => {
+            myConn = myPeer.connect(hostId);
+            myConn.on('open', () => {
+                isHost = false;
+                addChatMessage("Connected to Host!", "#55ff55");
+                setupNetworkListeners(myConn);
+                // Create a temporary world to play in
+                activeWorldId = 'mp_client_' + Date.now();
+                savedWorlds[activeWorldId] = { name: "MP Client", type: "DEFAULT", mode: "SURVIVAL", cheats: true, modifiedBlocks: {} };
+                startGame(savedWorlds[activeWorldId]);
+            });
+            myConn.on('error', (err) => alert("Connection error: " + err));
+        });
+    }
+
     let texCache = {}; let imgDataUrls = {}; let isDraggingFov = false; let previousMenu = "MAIN_MENU";
 
     function startFovDrag(e) { isDraggingFov = true; updateFovDrag(e); }
@@ -490,15 +606,11 @@
                        <div class="btn btn-half" onclick="playSound('click')">Inventory: E</div>`;
         } else if (type === 'language') {
             title = "Language";
-            content = `<div style="color:#aaa; text-align:center; width:100%; margin-bottom:10px;">Language selection simulated.</div>
-                       <div class="btn btn-half btn-active" onclick="playSound('click')">English (US)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">English (UK)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">Polski (Polska)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">Español (España)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">Français (France)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">Deutsch (Deutschland)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">Italiano (Italia)</div>
-                       <div class="btn btn-half" onclick="playSound('click')">Pirate Speak</div>`;
+            content = `<div style="color:#aaa; text-align:center; width:100%; margin-bottom:10px;">Select Language.</div>
+                       <div class="btn btn-half ${currentLang==='en_us'?'btn-active':''}" onclick="playSound('click'); setLanguage('en_us', this)">English (US)</div>
+                       <div class="btn btn-half ${currentLang==='es_es'?'btn-active':''}" onclick="playSound('click'); setLanguage('es_es', this)">Español (España)</div>
+                       <div class="btn btn-half ${currentLang==='pl_pl'?'btn-active':''}" onclick="playSound('click'); setLanguage('pl_pl', this)">Polski (Polska)</div>
+                       <div class="btn btn-half ${currentLang==='pirate'?'btn-active':''}" onclick="playSound('click'); setLanguage('pirate', this)">Pirate Speak</div>`;
         } else if (type === 'skin') {
             title = "Skin Customization";
             content = `<div class="btn btn-half btn-active" onclick="playSound('click'); toggleOptionClass(this)">Cape: ON</div>
@@ -640,6 +752,7 @@
     }
 
     const authenticSplashes = ["Polygons!", "Pixels!", "Now with 100% more blocks!", "Minceraft!", "Punch trees!", "Colormatic!"];
+    document.getElementById('splash-text').innerText = authenticSplashes[Math.floor(Math.random() * authenticSplashes.length)];
 
     function getDmgLevel(type, damage) {
         if(!type || (!type.endsWith('_pickaxe') && !type.endsWith('_axe') && !type.endsWith('_shovel') && !type.endsWith('_sword') && !type.endsWith('_hoe'))) return 0;
@@ -1343,7 +1456,6 @@
             } else { tY -= (type==='torch'?0.2:0.1); }
             b.position.set(tX, tY, tZ);
             
-            // Fixed torch brightness to be closer to real Minecraft (Light Level 14 equivalent)
             if(type==='torch'){ let tLight = new THREE.PointLight(0xffcd88, 1.0, 14, 1.5); b.add(tLight); b.light = tLight; } b.type = type;
         } else if (type === 'furnace') {
             let dir = new THREE.Vector3(); cam.getWorldDirection(dir);
@@ -1382,6 +1494,7 @@
         if(type === 'torch' || type.endsWith('_sapling') || type === 'dead_bush' || type === 'short_grass' || type === 'dandelion' || type === 'rose' || type === 'wheat_seeds' || type === 'wheat' || type === 'furnace' || type === 'chest') { addDynamicBlock(x,y,z,type, faceNormal); }
         else { markChunkDirty(x, z); markChunkDirty(x+1, z); markChunkDirty(x-1, z); markChunkDirty(x, z+1); markChunkDirty(x, z-1); }
         if(type === 'sand' || type === 'gravel') checkFall(x, y, z);
+        sendMPData({type: 'place', x: x, y: y, z: z, bType: type});
     }
 
     function removeB(x, y, z) {
@@ -1398,6 +1511,7 @@
         }
         voxels.set(key, 'AIR'); modifiedBlocks[key] = 'AIR';
         markChunkDirty(x, z); markChunkDirty(x+1, z); markChunkDirty(x-1, z); markChunkDirty(x, z+1); markChunkDirty(x, z-1);
+        sendMPData({type: 'break', x: x, y: y, z: z});
         
         let topKey = `${x},${y+1},${z}`; let topT = voxels.get(topKey);
         if(topT === 'torch' || topT === 'cactus' || topT === 'sand' || topT === 'gravel' || topT?.endsWith('_sapling') || topT === 'dead_bush' || topT === 'short_grass' || topT === 'dandelion' || topT === 'rose' || topT === 'wheat' || topT === 'wheat_seeds') { 
@@ -1663,12 +1777,26 @@
           sun.position.set(camIntX + 30, 100, camIntZ + 30); sun.target.position.set(camIntX, 0, camIntZ); sun.target.updateMatrixWorld();
           
           let pY = Math.floor(cameraGroup.position.y); let sY = getSurfaceH(camIntX, camIntZ);
-          let isEnclosed = false;
-          for(let cy = pY; cy <= sY + 1; cy++) { let t = voxels.get(`${camIntX},${cy},${camIntZ}`); if(t && t !== 'AIR' && !transparentBlocks.includes(t)) { isEnclosed = true; break; } }
           
-          let targetAmbient = optLighting === 1 ? 0.45 : 0.8; let targetFogColor = new THREE.Color(skyColor); let depth = (sY - pY);
-          if (isEnclosed && depth >= 0 && optLighting === 1) { let darkness = Math.max(0.04, 0.25 - (depth * 0.015)); targetAmbient = darkness; targetFogColor.setHex(0x050505); }
+          // Fixed lighting logic! No more pitch black bug!
+          let isEnclosed = false;
+          if (pY < sY) {
+              for(let cy = pY; cy <= pY + 15; cy++) {
+                  if (isSolidVoxel(camIntX, cy, camIntZ)) { isEnclosed = true; break; }
+              }
+          }
+          
+          let targetAmbient = optLighting === 1 ? 0.45 : 0.8; let targetFogColor = new THREE.Color(skyColor);
+          if (isEnclosed && optLighting === 1) { 
+              let depth = Math.max(0, sY - pY);
+              let darkness = Math.max(0.04, 0.45 - (depth * 0.02)); 
+              targetAmbient = darkness; targetFogColor.setHex(0x050505); 
+          }
           amb.intensity = THREE.MathUtils.lerp(amb.intensity, targetAmbient, 0.05); sc.fog.color.lerp(targetFogColor, 0.05); sc.background.lerp(targetFogColor, 0.05);
+
+          if(myConn && myConn.open && globalTick % 3 === 0) {
+              sendMPData({ type: 'pos', x: cameraGroup.position.x, y: cameraGroup.position.y, z: cameraGroup.position.z });
+          }
 
           if(gameplayChunkQueue.length > 0) { let c = gameplayChunkQueue.shift(); generateChunkVolume(c.x, c.z); let chunk = new Chunk(c.x, c.z); chunk.update(); chunks.set(`${c.x},${c.z}`, chunk); }
 
@@ -1709,7 +1837,7 @@
               let rKey = keysArr[Math.floor(Math.random() * keysArr.length)]; let type = voxels.get(rKey); let coords = rKey.split(',').map(Number);
               if (type && type.endsWith('_leaves')) {
                   let foundWood = false;
-                  for(let dx=-3; dx<=3 && !foundWood; dx++) for(let dy=-3; dy<=3 && !foundWood; dy++) for(let dz=-3; dz<=3 && !foundWood; dz++) { let k2=`${coords[0]+dx},${coords[1]+dy},${coords[2]+dz}`; let t2 = voxels.get(k2); if(t2 && t2.endsWith('_log')) foundWood = true; }
+                  for(let dx=-3; dx<=3 && !foundWood; dx++) for(let dy=-3; dy<=3 && !foundWood; dx++) for(let dz=-3; dz<=3 && !foundWood; dz++) { let k2=`${coords[0]+dx},${coords[1]+dy},${coords[2]+dz}`; let t2 = voxels.get(k2); if(t2 && t2.endsWith('_log')) foundWood = true; }
                   if(!foundWood) { playSound('break', type); removeB(coords[0], coords[1], coords[2]); if(Math.random()<0.05) dropItemIntoWorld(type.replace('leaves','sapling'), 1, 0); if(type === 'oak_leaves' && Math.random()<0.05) dropItemIntoWorld('apple', 1, 0); }
               } else if (type === 'farmland') {
                   if (Math.random() < 0.2) { removeB(coords[0],coords[1],coords[2]); placeB(coords[0],coords[1],coords[2], 'dirt'); }
@@ -1818,124 +1946,147 @@
 
             cam.position.y = 0;
 
-            if(!isSpectator && !player.flying && isSolidVoxel(Math.round(cameraGroup.position.x), Math.round(cameraGroup.position.y - 1.6), Math.round(cameraGroup.position.z)) && isMoving && gameState === "PLAYING") {
-                let speed = Math.sqrt(pVel.x*pVel.x + pVel.z*pVel.z); stepTimer += speed; 
-                if(stepTimer > (isSprinting ? 0.7 : 0.5)) { let bName = voxels.get(`${Math.round(cameraGroup.position.x)},${Math.round(cameraGroup.position.y - 1.6)},${Math.round(cameraGroup.position.z)}`); playSound('step', bName || 'grass'); stepTimer = 0; player.exhaustion += isSprinting ? 0.1 : 0.01; }
-            } else { stepTimer = 0; }
+            if(!isSpectator && !player.flying && isSolidVoxel(Math.round(cameraGroup.position.x), Math.round(cameraGroup.position.y - 1.6), Math.round(cameraGroup.position.z))) {
+                    if(isMoving) {
+                        stepTimer += isSprinting ? 0.35 : 0.25;
+                        if(stepTimer > 4) {
+                            let stepBlock = voxels.get(`${Math.round(cameraGroup.position.x)},${Math.round(cameraGroup.position.y - 1.6)},${Math.round(cameraGroup.position.z)}`);
+                            if(stepBlock) playSound('step', stepBlock);
+                            stepTimer = 0;
+                            if(isSprinting) player.exhaustion += 0.01; else player.exhaustion += 0.001;
+                        }
+                        // View bobbing
+                        cam.position.y = Math.sin(globalTick * (isSprinting ? 0.4 : 0.3)) * 0.08;
+                    } else { stepTimer = 0; }
+                }
 
-            if(!isCreative && !isSpectator) {
-                if(player.exhaustion >= 4.0) { player.exhaustion -= 4.0; if(player.saturation > 0) player.saturation = Math.max(0, player.saturation - 1); else player.food = Math.max(0, player.food - 1); updateUI(); }
+                // Food / Exhaustion Logic
+                if(player.exhaustion > 4.0) {
+                    player.exhaustion -= 4.0;
+                    if(player.saturation > 0) player.saturation = Math.max(0, player.saturation - 1);
+                    else player.food = Math.max(0, player.food - 1);
+                    updateUI();
+                }
                 if(player.food >= 18 && player.hp < 20 && globalTick % 80 === 0) { player.hp++; player.exhaustion += 6.0; updateUI(); }
-                if(player.food <= 0 && globalTick % 80 === 0 && player.hp > 1) { applyDamage(1, "starved to death"); }
-            }
+                if(player.food <= 0 && globalTick % 80 === 0) { applyDamage(1, "starved to death"); }
 
-            drops.forEach((d, i) => {
-              d.velY -= 0.01; d.mesh.position.y += d.velY;
-              if(d.velDir) { d.mesh.position.x += d.velDir.x; d.mesh.position.z += d.velDir.z; d.velDir.multiplyScalar(0.9); }
-              
-              let floorType = voxels.get(`${Math.round(d.mesh.position.x)},${Math.floor(d.mesh.position.y - 0.2)},${Math.round(d.mesh.position.z)}`);
-              if(isSolidVoxel(Math.round(d.mesh.position.x), Math.floor(d.mesh.position.y - 0.2), Math.round(d.mesh.position.z))) { 
-                  if (!floorType.endsWith('_leaves') && floorType !== 'torch' && !transparentBlocks.includes(floorType)) { d.velY = 0; d.mesh.position.y = Math.floor(d.mesh.position.y-0.2) + 0.65; d.velDir.x=0; d.velDir.z=0; }
-              }
-              if(!d.is2D) { d.mesh.rotation.y += 0.03; d.mesh.rotation.x += 0.01; } else { d.mesh.rotation.y += 0.05; }
-              
-              let pFeet = cameraGroup.position.clone(); pFeet.y -= 1.5;
-              if(Date.now() - d.spawnTime > 1500 && pFeet.distanceTo(d.mesh.position) < 2.5 && !player.dead) { d.mesh.position.lerp(pFeet, 0.25); if(pFeet.distanceTo(d.mesh.position) < 0.7) { playSound('click'); sc.remove(d.mesh); drops.splice(i, 1); addToInventory(d.type, 1, d.damage); } }
-            });
-
-            if(miningTarget && gameState === "PLAYING" && !player.dead) {
-                let activeItem = inventory[activeSlot]; let activeType = activeItem.type; 
-                let lookDir = new THREE.Vector3(); cam.getWorldDirection(lookDir); lookDir.normalize();
-                let hit = fastVoxelRaycast(cameraGroup.position, lookDir, 6);
-                
-                if(!hit || hit.x !== miningTarget.x || hit.y !== miningTarget.y || hit.z !== miningTarget.z) { 
-                    miningTarget = null; crackMesh.visible = false; redstoneGlow.visible = false;
-                } else {
-                    let name = miningTarget.name;
-                    if (name === 'redstone_ore') { redstoneGlow.position.set(miningTarget.x, miningTarget.y, miningTarget.z); redstoneGlow.visible = true; } else { redstoneGlow.visible = false; }
-
-                    let baseHardness = 1.0; let isCorrectTool = false; let toolSpeed = 1.0; let canHarvest = false;
-                    let activeSafeType = activeType || ''; let toolClass = 'hand';
-                    if (activeSafeType.endsWith('_pickaxe')) toolClass = 'pickaxe'; if (activeSafeType.endsWith('_axe')) toolClass = 'axe'; if (activeSafeType.endsWith('_shovel')) toolClass = 'shovel'; if (activeSafeType.endsWith('_sword')) toolClass = 'sword'; if (activeSafeType.endsWith('_hoe')) toolClass = 'hoe';
-
-                    if (activeSafeType.startsWith('wooden_')) toolSpeed = 2.0; if (activeSafeType.startsWith('stone_')) toolSpeed = 4.0; if (activeSafeType.startsWith('iron_')) toolSpeed = 6.0; if (activeSafeType.startsWith('diamond_')) toolSpeed = 8.0; if (activeSafeType.startsWith('golden_')) toolSpeed = 12.0;
-
-                    let bName = miningTarget.name;
-                    if (['stone', 'cobblestone', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 'redstone_ore', 'lapis_ore', 'emerald_ore', 'coal_block', 'iron_block', 'gold_block', 'diamond_block', 'emerald_block', 'lapis_block', 'redstone_block', 'furnace'].includes(bName)) {
-                        baseHardness = 1.5; if(bName.endsWith('_ore')) baseHardness = 3.0; if(bName.endsWith('_block')) baseHardness = 5.0; if(bName === 'furnace') baseHardness = 3.5;
-                        if(toolClass === 'pickaxe') {
-                            isCorrectTool = true; canHarvest = true;
-                            if((bName === 'iron_ore' || bName === 'lapis_ore') && (!activeSafeType.startsWith('stone_') && !activeSafeType.startsWith('iron_') && !activeSafeType.startsWith('diamond_'))) canHarvest = false;
-                            if((bName === 'gold_ore' || bName === 'diamond_ore' || bName === 'emerald_ore' || bName === 'redstone_ore') && (!activeSafeType.startsWith('iron_') && !activeSafeType.startsWith('diamond_'))) canHarvest = false;
-                        }
-                    } else if (bName.endsWith('_log') || bName.endsWith('_planks') || bName === 'crafting_table' || bName === 'chest') {
-                        baseHardness = 2.0; if(toolClass === 'axe') { isCorrectTool = true; canHarvest = true; } else { canHarvest = true; }
-                    } else if (bName === 'dirt' || bName === 'grass' || bName === 'sand' || bName === 'gravel' || bName === 'farmland') {
-                        baseHardness = 0.5; if(bName === 'grass') baseHardness = 0.6;
-                        if(toolClass === 'shovel') { isCorrectTool = true; canHarvest = true; } else { canHarvest = true; }
-                    } else if (bName.endsWith('_leaves') || bName === 'short_grass' || bName === 'dead_bush' || bName.endsWith('_sapling') || bName === 'dandelion' || bName === 'rose' || bName === 'wheat' || bName === 'wheat_seeds' || bName === 'torch' || bName === 'cactus') {
-                        baseHardness = 0.2; canHarvest = true; if(toolClass === 'sword' || toolClass === 'hoe') toolSpeed = 1.5;
-                        if(bName === 'cactus') baseHardness = 0.4;
-                    } else if (bName === 'bedrock') {
-                        baseHardness = -1;
-                    }
-
-                    if (savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE') { miningProgress = 1000; }
-                    else {
-                        if(baseHardness < 0) miningProgress = 0;
-                        else {
-                            let damage = isCorrectTool ? toolSpeed / baseHardness / 30 : 1 / baseHardness / 100;
-                            miningProgress += damage;
+                // Item Physics and Collection
+                for(let i = drops.length - 1; i >= 0; i--) {
+                    let d = drops[i];
+                    if(Date.now() - d.spawnTime > 300000) { sc.remove(d.mesh); drops.splice(i, 1); continue; } // Despawn 5 mins
+                    
+                    let dist = d.mesh.position.distanceTo(cameraGroup.position);
+                    if (Date.now() - d.spawnTime > 500 && dist < 1.5 && !isSpectator) {
+                        if(addToInventory(d.type, 1, d.damage)) {
+                            playSound('click'); sc.remove(d.mesh); drops.splice(i, 1);
+                            continue;
                         }
                     }
+                    
+                    d.velY -= 0.01; let destY = d.mesh.position.y + d.velY;
+                    if(isSolidVoxel(Math.round(d.mesh.position.x), Math.round(destY - 0.2), Math.round(d.mesh.position.z))) {
+                        d.velY = 0; d.velDir.x *= 0.8; d.velDir.z *= 0.8;
+                    } else {
+                        d.mesh.position.y = destY;
+                    }
+                    
+                    if(!isSolidVoxel(Math.round(d.mesh.position.x + d.velDir.x), Math.round(d.mesh.position.y), Math.round(d.mesh.position.z))) d.mesh.position.x += d.velDir.x; else d.velDir.x *= -0.5;
+                    if(!isSolidVoxel(Math.round(d.mesh.position.x), Math.round(d.mesh.position.y), Math.round(d.mesh.position.z + d.velDir.z))) d.mesh.position.z += d.velDir.z; else d.velDir.z *= -0.5;
+                    
+                    if (d.is2D) d.mesh.rotation.y += 0.05; else { d.mesh.rotation.x += 0.05; d.mesh.rotation.y += 0.05; }
+                }
 
-                    if(miningProgress > 0 && globalTick % 5 === 0 && baseHardness > 0) playSound('dig', bName);
-
-                    if (miningProgress >= 1.0) {
-                        playSound('break', bName);
-                        removeB(hit.x, hit.y, hit.z);
-                        if(savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode !== 'CREATIVE' && canHarvest) {
-                            let dropT = bName; let dropAmt = 1;
-                            if(bName === 'stone') dropT = 'cobblestone';
-                            if(bName === 'coal_ore') dropT = 'coal';
-                            if(bName === 'iron_ore') dropT = 'raw_iron';
-                            if(bName === 'gold_ore') dropT = 'raw_gold';
-                            if(bName === 'diamond_ore') dropT = 'diamond';
-                            if(bName === 'emerald_ore') dropT = 'emerald';
-                            if(bName === 'lapis_ore') { dropT = 'lapis_lazuli'; dropAmt = Math.floor(Math.random() * 5) + 4; }
-                            if(bName === 'redstone_ore') { dropT = 'redstone'; dropAmt = Math.floor(Math.random() * 4) + 4; }
-                            if(bName === 'grass') dropT = 'dirt';
-                            if(bName === 'farmland') dropT = 'dirt';
-                            if(bName.endsWith('_leaves')) { dropT = bName.replace('leaves', 'sapling'); if(Math.random() > 0.05) dropAmt = 0; }
-                            if(bName === 'short_grass') dropT = 'wheat_seeds'; if(bName === 'short_grass' && Math.random() > 0.1) dropAmt = 0;
-                            if(bName === 'dead_bush') dropT = 'stick';
-                            if(bName === 'wheat') { dropT = 'wheat'; dropItemIntoWorld('wheat_seeds', Math.floor(Math.random()*2)+1, 0); }
-
-                            if(dropAmt > 0) dropItemIntoWorld(dropT, dropAmt, 0);
-                            
-                            if(bName === 'oak_log' || bName === 'birch_log') checkAchievement('wood');
-                            if(bName === 'stone') checkAchievement('stone');
-
-                            if(activeItem && activeItem.type && toolClass !== 'hand') {
-                                activeItem.damage++;
-                                let maxD = activeSafeType.startsWith('diamond_') ? 1561 : activeSafeType.startsWith('iron_') ? 250 : (activeSafeType.startsWith('stone_') ? 131 : (activeSafeType.startsWith('golden_') ? 32 : 59));
-                                if(activeItem.damage >= maxD) {
-                                    playSound('tool_break'); activeItem.type = null; activeItem.count = 0; activeItem.damage = 0;
-                                }
-                                updateUI();
-                            }
-                            player.exhaustion += 0.005;
-                        }
+                // Mining Logic
+                if(miningTarget && !isSpectator) {
+                    let lookDir = new THREE.Vector3(); cam.getWorldDirection(lookDir); lookDir.normalize();
+                    let hit = fastVoxelRaycast(cameraGroup.position, lookDir, 6);
+                    if(!hit || hit.x !== miningTarget.x || hit.y !== miningTarget.y || hit.z !== miningTarget.z) {
                         miningTarget = null; crackMesh.visible = false; redstoneGlow.visible = false;
                     } else {
-                        crackMesh.position.set(hit.x, hit.y, hit.z); crackMesh.visible = true;
-                        let crackStage = Math.floor(miningProgress * 10);
-                        if(crackStage >= 0 && crackStage < 10) crackMesh.material = crackMats[crackStage];
+                        let activeItem = inventory[activeSlot]; let activeType = activeItem ? activeItem.type : null;
+                        let baseHardness = 1.0; let isCorrectTool = false; let toolSpeed = 1.0; let canHarvest = false;
+                        let activeSafeType = activeType || ''; let toolClass = 'hand';
+                        if (activeSafeType.endsWith('_pickaxe')) toolClass = 'pickaxe'; if (activeSafeType.endsWith('_axe')) toolClass = 'axe'; if (activeSafeType.endsWith('_shovel')) toolClass = 'shovel'; if (activeSafeType.endsWith('_sword')) toolClass = 'sword'; if (activeSafeType.endsWith('_hoe')) toolClass = 'hoe';
+
+                        if (activeSafeType.startsWith('wooden_')) toolSpeed = 2.0; if (activeSafeType.startsWith('stone_')) toolSpeed = 4.0; if (activeSafeType.startsWith('iron_')) toolSpeed = 6.0; if (activeSafeType.startsWith('diamond_')) toolSpeed = 8.0; if (activeSafeType.startsWith('golden_')) toolSpeed = 12.0;
+
+                        let bName = miningTarget.name;
+                        if (['stone', 'cobblestone', 'coal_ore', 'iron_ore', 'gold_ore', 'diamond_ore', 'redstone_ore', 'lapis_ore', 'emerald_ore', 'coal_block', 'iron_block', 'gold_block', 'diamond_block', 'emerald_block', 'lapis_block', 'redstone_block', 'furnace'].includes(bName)) {
+                            baseHardness = 1.5; if(bName.endsWith('_ore')) baseHardness = 3.0; if(bName.endsWith('_block')) baseHardness = 5.0; if(bName === 'furnace') baseHardness = 3.5;
+                            if(toolClass === 'pickaxe') {
+                                isCorrectTool = true; canHarvest = true;
+                                if((bName === 'iron_ore' || bName === 'lapis_ore') && (!activeSafeType.startsWith('stone_') && !activeSafeType.startsWith('iron_') && !activeSafeType.startsWith('diamond_'))) canHarvest = false;
+                                if((bName === 'gold_ore' || bName === 'diamond_ore' || bName === 'emerald_ore' || bName === 'redstone_ore') && (!activeSafeType.startsWith('iron_') && !activeSafeType.startsWith('diamond_'))) canHarvest = false;
+                            }
+                        } else if (bName.endsWith('_log') || bName.endsWith('_planks') || bName === 'crafting_table' || bName === 'chest') {
+                            baseHardness = 2.0; if(toolClass === 'axe') { isCorrectTool = true; canHarvest = true; } else { canHarvest = true; }
+                        } else if (bName === 'dirt' || bName === 'grass' || bName === 'sand' || bName === 'gravel' || bName === 'farmland') {
+                            baseHardness = 0.5; if(bName === 'grass') baseHardness = 0.6;
+                            if(toolClass === 'shovel') { isCorrectTool = true; canHarvest = true; } else { canHarvest = true; }
+                        } else if (bName.endsWith('_leaves') || bName === 'short_grass' || bName === 'dead_bush' || bName.endsWith('_sapling') || bName === 'dandelion' || bName === 'rose' || bName === 'wheat' || bName === 'wheat_seeds' || bName === 'torch' || bName === 'cactus') {
+                            baseHardness = 0.2; canHarvest = true; if(toolClass === 'sword' || toolClass === 'hoe') toolSpeed = 1.5;
+                            if(bName === 'cactus') baseHardness = 0.4;
+                        } else if (bName === 'bedrock') {
+                            baseHardness = -1;
+                        }
+
+                        if (savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode === 'CREATIVE') { miningProgress = 1000; }
+                        else {
+                            if(baseHardness < 0) miningProgress = 0;
+                            else {
+                                let damage = isCorrectTool ? toolSpeed / baseHardness / 30 : 1 / baseHardness / 100;
+                                miningProgress += damage;
+                            }
+                        }
+
+                        if(miningProgress > 0 && globalTick % 5 === 0 && baseHardness > 0) playSound('dig', bName);
+
+                        if (miningProgress >= 1.0) {
+                            playSound('break', bName);
+                            removeB(hit.x, hit.y, hit.z);
+                            if(savedWorlds[activeWorldId] && savedWorlds[activeWorldId].mode !== 'CREATIVE' && canHarvest) {
+                                let dropT = bName; let dropAmt = 1;
+                                if(bName === 'stone') dropT = 'cobblestone';
+                                if(bName === 'coal_ore') dropT = 'coal';
+                                if(bName === 'iron_ore') dropT = 'raw_iron';
+                                if(bName === 'gold_ore') dropT = 'raw_gold';
+                                if(bName === 'diamond_ore') dropT = 'diamond';
+                                if(bName === 'emerald_ore') dropT = 'emerald';
+                                if(bName === 'lapis_ore') { dropT = 'lapis_lazuli'; dropAmt = Math.floor(Math.random() * 5) + 4; }
+                                if(bName === 'redstone_ore') { dropT = 'redstone'; dropAmt = Math.floor(Math.random() * 4) + 4; }
+                                if(bName === 'grass') dropT = 'dirt';
+                                if(bName === 'farmland') dropT = 'dirt';
+                                if(bName.endsWith('_leaves')) { dropT = bName.replace('leaves', 'sapling'); if(Math.random() > 0.05) dropAmt = 0; }
+                                if(bName === 'short_grass') dropT = 'wheat_seeds'; if(bName === 'short_grass' && Math.random() > 0.1) dropAmt = 0;
+                                if(bName === 'dead_bush') dropT = 'stick';
+                                if(bName === 'wheat') { dropT = 'wheat'; dropItemIntoWorld('wheat_seeds', Math.floor(Math.random()*2)+1, 0); }
+
+                                if(dropAmt > 0) dropItemIntoWorld(dropT, dropAmt, 0);
+                                
+                                if(bName === 'oak_log' || bName === 'birch_log') checkAchievement('wood');
+                                if(bName === 'stone') checkAchievement('stone');
+
+                                if(activeItem && activeItem.type && toolClass !== 'hand') {
+                                    activeItem.damage++;
+                                    let maxD = activeSafeType.startsWith('diamond_') ? 1561 : activeSafeType.startsWith('iron_') ? 250 : (activeSafeType.startsWith('stone_') ? 131 : (activeSafeType.startsWith('golden_') ? 32 : 59));
+                                    if(activeItem.damage >= maxD) {
+                                        playSound('tool_break'); activeItem.type = null; activeItem.count = 0; activeItem.damage = 0;
+                                    }
+                                    updateUI();
+                                }
+                                player.exhaustion += 0.005;
+                            }
+                            miningTarget = null; crackMesh.visible = false; redstoneGlow.visible = false;
+                        } else {
+                            crackMesh.position.set(hit.x, hit.y, hit.z); crackMesh.visible = true;
+                            let crackStage = Math.floor(miningProgress * 10);
+                            if(crackStage >= 0 && crackStage < 10) crackMesh.material = crackMats[crackStage];
+                        }
                     }
                 }
             }
         }
-      }
+        rnd.render(sc, cam);
     }
 
     // Input Listeners
@@ -1943,7 +2094,7 @@
       if(gameState === "CHAT") {
           if(e.code === 'Enter') {
               e.preventDefault(); let val = document.getElementById('chat-input').value.trim();
-              if(val) { if(val.startsWith('/')) processCommand(val); else addChatMessage("<Player> " + val); }
+              if(val) { if(val.startsWith('/')) processCommand(val); else addChatMessage("<Player> " + val); sendMPData({type: 'chat', msg: val}); }
               document.getElementById('chat-input').value = ''; setMenu('PLAYING');
           } else if(e.code === 'Escape') { e.preventDefault(); document.getElementById('chat-input').value = ''; setMenu('PLAYING'); }
           return;
